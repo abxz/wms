@@ -1,0 +1,58 @@
+[
+  {
+    "id": "5b0fc2910ae9",
+    "name": "王主管",
+    "employee_no": "E5b0fc2910ae9",
+    "department": "仓库",
+    "role": "admin",
+    "qr_code": "QR-EMP-5b0fc2910ae9",
+    "qr_image_path": "",
+    "monthly_quota": 1000,
+    "monthly_used": 0,
+    "active": true,
+    "created_at": "2026-05-15T07:00:21",
+    "updated_at": "2026-05-15T07:00:21"
+  },
+  {
+    "id": "4c49d0a36e01",
+    "name": "张三",
+    "employee_no": "E4c49d0a36e01",
+    "department": "机加工",
+    "role": "claimer",
+    "qr_code": "QR-EMP-4c49d0a36e01",
+    "qr_image_path": "",
+    "monthly_quota": 1000,
+    "monthly_used": 0,
+    "active": true,
+    "created_at": "2026-05-15T07:00:22",
+    "updated_at": "2026-05-15T07:00:22"
+  },
+  {
+    "id": "9778890f8907",
+    "name": "王主管",
+    "employee_no": "E9778890f8907",
+    "department": "仓库",
+    "role": "admin",
+    "qr_code": "QR-EMP-9778890f8907",
+    "qr_image_path": "",
+    "monthly_quota": 1000,
+    "monthly_used": 0,
+    "active": true,
+    "created_at": "2026-05-15T07:00:59",
+    "updated_at": "2026-05-15T07:00:59"
+  },
+  {
+    "id": "4441d1507f6f",
+    "name": "李四",
+    "employee_no": "E4441d1507f6f",
+    "department": "机加工",
+    "role": "claimer",
+    "qr_code": "QR-EMP-4441d1507f6f",
+    "qr_image_path": "",
+    "monthly_quota": 1000,
+    "monthly_used": 0,
+    "active": true,
+    "created_at": "2026-05-15T07:01:00",
+    "updated_at": "2026-05-15T07:01:00"
+  }
+]

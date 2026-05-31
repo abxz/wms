@@ -1,0 +1,123 @@
+// API 基础地址：优先环境变量，其次当前域名（代理模式兼容）
+const API_BASE = (window as any).__WMS_API_BASE__ || window.location.origin;
+
+async function req<T = any>(path: string, options?: RequestInit): Promise<T> {
+  const res = await fetch(`${API_BASE}/api${path}`, {
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    ...options,
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(err || `HTTP ${res.status}`);
+  }
+  const ct = res.headers.get("content-type") || "";
+  if (ct.includes("image") || ct.includes("zip")) return res as any;
+  return res.json();
+}
+
+export const api = {
+  // ─── 商品 ───
+  getProducts: (p = 1, s = "", pg = 20) => req(`/products?page=${p}&size=${pg}&search=${encodeURIComponent(s)}`),
+  getProduct: (id: string) => req(`/products/${id}`),
+  createProduct: (d: any) => req("/products", { method: "POST", body: JSON.stringify(d) }),
+  updateProduct: (id: string, d: any) => req(`/products/${id}`, { method: "PUT", body: JSON.stringify(d) }),
+  deleteProduct: (id: string) => req(`/products/${id}`, { method: "DELETE" }),
+
+  // ─── 库位 ───
+  getLocations: () => req("/locations"),
+  createLocation: (d: any) => req("/locations", { method: "POST", body: JSON.stringify(d) }),
+  updateLocation: (id: string, d: any) => req(`/locations/${id}`, { method: "PUT", body: JSON.stringify(d) }),
+  deleteLocation: (id: string) => req(`/locations/${id}`, { method: "DELETE" }),
+
+  // ─── 供应商 ───
+  getSuppliers: () => req("/suppliers"),
+  createSupplier: (d: any) => req("/suppliers", { method: "POST", body: JSON.stringify(d) }),
+  updateSupplier: (id: string, d: any) => req(`/suppliers/${id}`, { method: "PUT", body: JSON.stringify(d) }),
+  deleteSupplier: (id: string) => req(`/suppliers/${id}`, { method: "DELETE" }),
+
+  // ─── 员工 ───
+  getEmployees: () => req("/employees"),
+  getEmployee: (id: string) => req(`/employees/${id}`),
+  createEmployee: (d: any) => req("/employees", { method: "POST", body: JSON.stringify(d) }),
+  updateEmployee: (id: string, d: any) => req(`/employees/${id}`, { method: "PUT", body: JSON.stringify(d) }),
+  deleteEmployee: (id: string) => req(`/employees/${id}`, { method: "DELETE" }),
+  claimItem: (d: any) => req("/employees/claim", { method: "POST", body: JSON.stringify(d) }),
+
+  // ─── 库存 ───
+  getInventory: () => req("/inventory"),
+  getAlerts: () => req("/inventory/alerts"),
+  adjustInventory: (d: any) => req("/inventory/adjust", { method: "POST", body: JSON.stringify(d) }),
+
+  // ─── 入库 ───
+  getInbound: () => req("/inbound"),
+  createInbound: (d: any) => req("/inbound", { method: "POST", body: JSON.stringify(d) }),
+  completeInbound: (id: string) => req(`/inbound/${id}/complete`, { method: "PUT" }),
+
+  // ─── 出库 ───
+  getOutbound: () => req("/outbound"),
+  createOutbound: (d: any) => req("/outbound", { method: "POST", body: JSON.stringify(d) }),
+  completeOutbound: (id: string) => req(`/outbound/${id}/complete`, { method: "PUT" }),
+
+  // ─── 发票（增强版）───
+  getInvoices: (page = 1, size = 20, search = "") =>
+    req(`/invoices?page=${page}&size=${size}&search=${encodeURIComponent(search)}`),
+  createInvoice: (d: any) => req("/invoices", { method: "POST", body: JSON.stringify(d) }),
+  updateInvoice: (id: string, d: any) => req(`/invoices/${id}`, { method: "PUT", body: JSON.stringify(d) }),
+  deleteInvoice: (id: string) => req(`/invoices/${id}`, { method: "DELETE" }),
+
+  // 发票上传
+  uploadFile: async (file: File) => {
+    const form = new FormData(); form.append('file', file);
+    const res = await fetch(`${API_BASE}/api/invoices/upload`, { method: 'POST', body: form });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  },
+  // 发票解析（暂为占位，后续接入解析引擎后启用）
+  parseInvoiceFile: (filePath: string, filename: string, source = 'upload') =>
+    req('/invoices/parse', { method: 'POST', body: JSON.stringify({ file_path: filePath, filename, source }) }),
+  // 分类
+  classifyInvoice: (invoice: any) =>
+    req('/invoice-classifier/process', { method: 'POST', body: JSON.stringify({ invoice }) }),
+  // 自动对账
+  autoMatchInvoice: (invoice: any) =>
+    req('/invoices/auto-match', { method: 'POST', body: JSON.stringify({ invoice }) }),
+  // 关联入库单
+  reconcileInvoice: (invoiceNumber: string, inboundId: string) =>
+    req(`/invoices/${invoiceNumber}/reconcile`, { method: 'POST', body: JSON.stringify({ inbound_id: inboundId }) }),
+  // 邮箱配置
+  getEmailConfig: () => req('/invoice-collector/email/config'),
+  setEmailConfig: (cfg: any) => req('/invoice-collector/email/config', { method: 'POST', body: JSON.stringify(cfg) }),
+
+  // ─── 面板 ───
+  getDashboard: () => req("/dashboard/summary"),
+  getTrends: () => req("/dashboard/trends"),
+
+  // ─── 仓库 ───
+  getWarehouses: () => req("/warehouses/all"),
+  createWarehouse: (d: any) => req("/warehouses", { method: "POST", body: JSON.stringify(d) }),
+  updateWarehouse: (id: string, d: any) => req(`/warehouses/${id}`, { method: "PUT", body: JSON.stringify(d) }),
+  deleteWarehouse: (id: string) => req(`/warehouses/${id}`, { method: "DELETE" }),
+
+  // ─── 二维码 ───
+  getProductQR: (pid: string) => req(`/barcode/qrcode/product/${pid}`),
+  // ...batchQR...
+  // ─── PDA 认证 ───
+  pdaLogin: (qr: string) => req("/auth/pda-login", { method: "POST", body: JSON.stringify({ qr_code: qr }) }),
+  pdaLogout: (token: string) => req("/auth/pda-logout", { method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }),
+  pdaVerify: (token: string) => req("/auth/pda-verify", { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }),
+  batchQR: async (items: { qr_text: string; filename: string }[]) => {
+    const res = await fetch(`${API_BASE}/api/barcode/qrcode/batch`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ items }),
+    });
+    if (!res.ok) throw new Error("二维码生成失败");
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "qrcodes.zip";
+    a.click();
+    URL.revokeObjectURL(url);
+  },
+};

@@ -1,0 +1,9 @@
+{
+  "inbound_prefix": "IN-",
+  "inbound_start_no": "IN-0001",
+  "inbound_current_no": "IN-0003",
+  "outbound_prefix": "OUT-",
+  "outbound_start_no": "OUT-0001",
+  "outbound_current_no": "OUT-0010",
+  "max_items_per_order": 7
+}

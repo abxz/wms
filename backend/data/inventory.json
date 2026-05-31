@@ -1,0 +1,122 @@
+[
+  {
+    "id": "2605141714591215",
+    "product_id": "2605141714586019",
+    "quantity": 150.0,
+    "location_id": "",
+    "updated_at": "2026-05-14T17:15:00",
+    "created_at": "2026-05-14T17:14:59"
+  },
+  {
+    "id": "3b7b360001d5",
+    "product_id": "dd982a516218",
+    "quantity": 40.0,
+    "location_id": "",
+    "updated_at": "2026-05-14T17:33:37",
+    "created_at": "2026-05-14T17:33:37"
+  },
+  {
+    "id": "91624f686a31",
+    "product_id": "a6b958c23425",
+    "quantity": 40.0,
+    "location_id": "",
+    "updated_at": "2026-05-14T17:33:49",
+    "created_at": "2026-05-14T17:33:49"
+  },
+  {
+    "id": "23745d558848",
+    "product_id": "b09e37693c4f",
+    "quantity": 40.0,
+    "location_id": "",
+    "updated_at": "2026-05-14T17:34:01",
+    "created_at": "2026-05-14T17:34:01"
+  },
+  {
+    "id": "d79fe0bcf837",
+    "product_id": "test-idempotent",
+    "quantity": 1.0,
+    "location_id": "",
+    "updated_at": "2026-05-14T19:08:43",
+    "created_at": "2026-05-14T19:08:43"
+  },
+  {
+    "id": "9ec05d97d687",
+    "product_id": "p1",
+    "quantity": 20.0,
+    "location_id": "",
+    "updated_at": "2026-05-14T19:09:47",
+    "created_at": "2026-05-14T19:09:20"
+  },
+  {
+    "id": "8b62ddda70c8",
+    "product_id": "p-out-1",
+    "quantity": 70.0,
+    "location_id": "",
+    "updated_at": "2026-05-14T19:09:20",
+    "created_at": "2026-05-14T19:09:20"
+  },
+  {
+    "id": "d06f42ec83d6",
+    "product_id": "p-out",
+    "quantity": 70.0,
+    "location_id": "",
+    "updated_at": "2026-05-14T19:09:47",
+    "created_at": "2026-05-14T19:09:47"
+  },
+  {
+    "id": "fd53308e621c",
+    "product_id": "19859219e809",
+    "quantity": 30.0,
+    "location_id": "",
+    "updated_at": "2026-05-14T19:10:01",
+    "created_at": "2026-05-14T19:10:01"
+  },
+  {
+    "id": "21573b376d95",
+    "product_id": "test1",
+    "quantity": 102.0,
+    "location_id": "",
+    "updated_at": "2026-05-15T07:00:25",
+    "created_at": "2026-05-15T06:40:01"
+  },
+  {
+    "id": "a6cba4e475db",
+    "product_id": "test2",
+    "quantity": 60.0,
+    "location_id": "",
+    "updated_at": "2026-05-15T07:00:24",
+    "created_at": "2026-05-15T06:40:01"
+  },
+  {
+    "id": "5a5dc9902bed",
+    "product_id": "test3",
+    "quantity": 10.0,
+    "location_id": "",
+    "updated_at": "2026-05-15T06:40:01",
+    "created_at": "2026-05-15T06:40:01"
+  },
+  {
+    "id": "db1e0463b790",
+    "product_id": "2bb39a486c26",
+    "quantity": 85.0,
+    "location_id": "",
+    "updated_at": "2026-05-15T07:01:01",
+    "created_at": "2026-05-15T07:01:00"
+  },
+  {
+    "id": "e31c4e7db166",
+    "product_id": "04af7d550756",
+    "quantity": 44.0,
+    "location_id": "",
+    "updated_at": "2026-05-15T07:01:01",
+    "created_at": "2026-05-15T07:01:00"
+  },
+  {
+    "id": "df60ad63e84c",
+    "product_id": "61d271f164e7",
+    "quantity": 350.0,
+    "location_id": "",
+    "updated_at": "2026-05-15T07:01:01",
+    "created_at": "2026-05-15T07:01:00"
+  }
+]

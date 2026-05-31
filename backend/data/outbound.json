@@ -1,0 +1,315 @@
+[
+  {
+    "id": "2605141715011321",
+    "order_no": "OUT20260514171501",
+    "items": [
+      {
+        "product_id": "2605141714586019",
+        "quantity": 10
+      }
+    ],
+    "type": "normal",
+    "employee_id": "",
+    "total_amount": 0.0,
+    "status": "pending",
+    "remark": "",
+    "created_at": "2026-05-14T17:15:01",
+    "updated_at": "2026-05-14T17:15:01"
+  },
+  {
+    "id": "7e7eadbd053c",
+    "order_no": "OUT20260514173337",
+    "items": [
+      {
+        "product_id": "dd982a516218",
+        "quantity": 10
+      }
+    ],
+    "type": "normal",
+    "employee_id": "",
+    "total_amount": 0.0,
+    "status": "completed",
+    "remark": "",
+    "created_at": "2026-05-14T17:33:37",
+    "updated_at": "2026-05-14T17:33:37"
+  },
+  {
+    "id": "28321792bf09",
+    "order_no": "OUT20260514173349",
+    "items": [
+      {
+        "product_id": "a6b958c23425",
+        "quantity": 10
+      }
+    ],
+    "type": "normal",
+    "employee_id": "",
+    "total_amount": 0.0,
+    "status": "completed",
+    "remark": "",
+    "created_at": "2026-05-14T17:33:49",
+    "updated_at": "2026-05-14T17:33:49"
+  },
+  {
+    "id": "01cc1a6c361a",
+    "order_no": "OUT20260514173401",
+    "items": [
+      {
+        "product_id": "b09e37693c4f",
+        "quantity": 10
+      }
+    ],
+    "type": "normal",
+    "employee_id": "",
+    "total_amount": 0.0,
+    "status": "completed",
+    "remark": "",
+    "created_at": "2026-05-14T17:34:01",
+    "updated_at": "2026-05-14T17:34:01"
+  },
+  {
+    "id": "94c4b9d250e5",
+    "order_no": "OUT20260514190843",
+    "items": [
+      {
+        "product_id": "nonexistent",
+        "quantity": 999
+      }
+    ],
+    "type": "normal",
+    "employee_id": "",
+    "total_amount": 0.0,
+    "status": "pending",
+    "remark": "",
+    "created_at": "2026-05-14T19:08:43",
+    "updated_at": "2026-05-14T19:08:43"
+  },
+  {
+    "id": "c187f6f447cb",
+    "order_no": "OUT20260514190920",
+    "items": [
+      {
+        "product_id": "p-out-1",
+        "quantity": 30
+      }
+    ],
+    "type": "normal",
+    "employee_id": "",
+    "total_amount": 0.0,
+    "status": "completed",
+    "remark": "",
+    "created_at": "2026-05-14T19:09:20",
+    "updated_at": "2026-05-14T19:09:20"
+  },
+  {
+    "id": "20ed5380df62",
+    "order_no": "OUT20260514190947",
+    "items": [
+      {
+        "product_id": "p-out",
+        "quantity": 30
+      }
+    ],
+    "type": "normal",
+    "employee_id": "",
+    "total_amount": 0.0,
+    "status": "completed",
+    "remark": "",
+    "created_at": "2026-05-14T19:09:47",
+    "updated_at": "2026-05-14T19:09:47"
+  },
+  {
+    "id": "436c0fd64da8",
+    "order_no": "OUT20260514235127",
+    "invoice_no": "",
+    "items": [
+      {
+        "product_id": "120a218431c0",
+        "quantity": 2,
+        "price": 10
+      }
+    ],
+    "type": "normal",
+    "employee_id": "",
+    "claimer_id": "",
+    "claimer_name": "张三",
+    "admin_id": "",
+    "admin_name": "王主管",
+    "usage_location": "3号车间",
+    "total_amount": 20.0,
+    "status": "pending",
+    "max_items": 7,
+    "remark": "",
+    "created_at": "2026-05-14T23:51:27",
+    "updated_at": "2026-05-14T23:51:27"
+  },
+  {
+    "id": "bcda18d5ccbd",
+    "order_no": "OUT-0001",
+    "invoice_no": "",
+    "items": [
+      {
+        "product_id": "test",
+        "quantity": 2,
+        "price": 10
+      }
+    ],
+    "type": "normal",
+    "employee_id": "",
+    "claimer_id": "",
+    "claimer_name": "张三",
+    "admin_id": "",
+    "admin_name": "王主管",
+    "usage_location": "3号车间",
+    "total_amount": 20.0,
+    "status": "pending",
+    "max_items": 7,
+    "remark": "",
+    "created_at": "2026-05-14T23:51:58",
+    "updated_at": "2026-05-14T23:51:58"
+  },
+  {
+    "id": "41e3355fe44d",
+    "order_no": "OUT-0006",
+    "invoice_no": "",
+    "items": [
+      {
+        "product_id": "test1",
+        "quantity": 1
+      },
+      {
+        "product_id": "test1",
+        "quantity": 1
+      },
+      {
+        "product_id": "test1",
+        "quantity": 1
+      },
+      {
+        "product_id": "test1",
+        "quantity": 1
+      },
+      {
+        "product_id": "test1",
+        "quantity": 1
+      },
+      {
+        "product_id": "test1",
+        "quantity": 1
+      },
+      {
+        "product_id": "test1",
+        "quantity": 1
+      }
+    ],
+    "type": "normal",
+    "employee_id": "",
+    "claimer_id": "",
+    "claimer_name": "张三",
+    "admin_id": "",
+    "admin_name": "王主管",
+    "usage_location": "3号车间",
+    "total_amount": 0,
+    "status": "completed",
+    "max_items": 7,
+    "remark": "",
+    "created_at": "2026-05-15T07:00:25",
+    "updated_at": "2026-05-15T07:00:25"
+  },
+  {
+    "id": "cf74cf7ad794",
+    "order_no": "OUT-0007",
+    "invoice_no": "",
+    "items": [
+      {
+        "product_id": "test1",
+        "quantity": 1
+      }
+    ],
+    "type": "normal",
+    "employee_id": "",
+    "claimer_id": "",
+    "claimer_name": "张三",
+    "admin_id": "",
+    "admin_name": "王主管",
+    "usage_location": "3号车间",
+    "total_amount": 0,
+    "status": "completed",
+    "max_items": 7,
+    "remark": "",
+    "created_at": "2026-05-15T07:00:25",
+    "updated_at": "2026-05-15T07:00:25"
+  },
+  {
+    "id": "02f0b7c68da9",
+    "order_no": "OUT-0008",
+    "invoice_no": "",
+    "items": [
+      {
+        "product_id": "2bb39a486c26",
+        "quantity": 5
+      },
+      {
+        "product_id": "04af7d550756",
+        "quantity": 3
+      },
+      {
+        "product_id": "61d271f164e7",
+        "quantity": 50
+      },
+      {
+        "product_id": "2bb39a486c26",
+        "quantity": 5
+      },
+      {
+        "product_id": "04af7d550756",
+        "quantity": 3
+      },
+      {
+        "product_id": "61d271f164e7",
+        "quantity": 50
+      },
+      {
+        "product_id": "2bb39a486c26",
+        "quantity": 5
+      }
+    ],
+    "type": "normal",
+    "employee_id": "",
+    "claimer_id": "",
+    "claimer_name": "李四",
+    "admin_id": "",
+    "admin_name": "王主管",
+    "usage_location": "3号车间",
+    "total_amount": 0,
+    "status": "completed",
+    "max_items": 7,
+    "remark": "",
+    "created_at": "2026-05-15T07:01:01",
+    "updated_at": "2026-05-15T07:01:01"
+  },
+  {
+    "id": "11280a0b21cb",
+    "order_no": "OUT-0009",
+    "invoice_no": "",
+    "items": [
+      {
+        "product_id": "61d271f164e7",
+        "quantity": 50
+      }
+    ],
+    "type": "normal",
+    "employee_id": "",
+    "claimer_id": "",
+    "claimer_name": "李四",
+    "admin_id": "",
+    "admin_name": "王主管",
+    "usage_location": "3号车间",
+    "total_amount": 0,
+    "status": "completed",
+    "max_items": 7,
+    "remark": "",
+    "created_at": "2026-05-15T07:01:01",
+    "updated_at": "2026-05-15T07:01:01"
+  }
+]

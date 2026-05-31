@@ -1,0 +1,82 @@
+"""员工管理模块"""
+from fastapi import APIRouter, Query, HTTPException
+from modules.employees import service as svc
+
+router = APIRouter(prefix="/api/employees", tags=["员工管理"])
+
+def register(app):
+    app.include_router(router)
+
+@router.get("")
+def route_list(page: int = Query(1, ge=1), size: int = Query(20, ge=1, le=100), search: str = ""):
+    return svc.list_employees(page, size, search)
+
+@router.get("/{eid}")
+def route_get(eid: str):
+    emp = svc.get_employee(eid)
+    if not emp:
+        raise HTTPException(404, "员工不存在")
+    return emp
+
+@router.post("", status_code=201)
+def route_create(body: dict):
+    return svc.create_employee(body)
+
+@router.put("/{eid}")
+def route_update(eid: str, body: dict):
+    emp = svc.update_employee(eid, body)
+    if not emp:
+        raise HTTPException(404, "员工不存在")
+    return emp
+
+@router.delete("/{eid}")
+def route_delete(eid: str):
+    if not svc.delete_employee(eid):
+        raise HTTPException(404, "员工不存在")
+    return {"ok": True}
+
+@router.post("/{eid}/reset-quota")
+def route_reset_quota(eid: str):
+    emp = svc.reset_quota(eid)
+    if not emp:
+        raise HTTPException(404, "员工不存在")
+    return emp
+
+@router.get("/{eid}/claims")
+def route_claims(eid: str):
+    if not svc.get_employee(eid):
+        raise HTTPException(404, "员工不存在")
+    return svc.get_claims(eid)
+
+@router.post("/claim")
+def route_claim(body: dict):
+    """员工扫码领用"""
+    eid = body.get("employee_id")
+    pid = body.get("product_id")
+    qty = float(body.get("quantity", 1))
+
+    emp = svc.get_employee(eid)
+    if not emp:
+        raise HTTPException(404, "员工不存在")
+
+    from modules.products.service import get_product
+    product = get_product(pid)
+    if not product:
+        raise HTTPException(404, "商品不存在")
+
+    amount = qty * product.get("price", 0)
+    if emp["monthly_used"] + amount > emp["monthly_quota"]:
+        raise HTTPException(400, f"月度额度不足：已用{emp['monthly_used']:.0f}，额度{emp['monthly_quota']:.0f}")
+
+    from modules.inventory.service import update_stock
+    update_stock(pid, -qty)
+    svc.update_employee(eid, {"monthly_used": emp["monthly_used"] + amount})
+    record = svc.add_claim({
+        "employee_id": eid,
+        "product_id": pid,
+        "product_name": product.get("name", ""),
+        "quantity": qty,
+        "amount": amount,
+        "remark": body.get("remark", ""),
+    })
+    return record
