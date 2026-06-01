@@ -12,10 +12,16 @@ function QrImage({ qrUuid }: { qrUuid: string }) {
 
   useEffect(() => {
     if (!qrUuid) { setLoading(false); return; }
+    const controller = new AbortController();
+    const token = localStorage.getItem("wms_token") || localStorage.getItem("auth_token");
     fetch(`${API_BASE}/api/barcode/qrcode`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
       body: JSON.stringify({ data: qrUuid }),
+      signal: controller.signal,
     })
       .then((r) => {
         if (!r.ok) throw new Error();
@@ -24,7 +30,8 @@ function QrImage({ qrUuid }: { qrUuid: string }) {
         return r.json().then((j) => j.url || j.path || null);
       })
       .then((url) => { setSrc(url); setLoading(false); })
-      .catch(() => setLoading(false));
+      .catch((e) => { if (e?.name !== "AbortError") setLoading(false); });
+    return () => controller.abort();
   }, [qrUuid]);
 
   if (loading) return <div className="w-12 h-12 bg-gray-100 rounded animate-pulse" />;
@@ -86,6 +93,7 @@ export default function QrCodes() {
   const pages = Math.ceil(total / 20);
 
   return (
+    <>
     <div>
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-bold">🔲 二维码管理</h1>
@@ -163,6 +171,6 @@ export default function QrCodes() {
         <button onClick={() => setErrorModal("")} className="mt-4 w-full bg-gray-800 text-white py-3 rounded-xl font-medium">确定</button>
       </div>
     </Modal>
-  </div>
-);
+    </>
+  );
 }

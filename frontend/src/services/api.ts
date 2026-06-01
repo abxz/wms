@@ -2,8 +2,13 @@
 const API_BASE = (window as any).__WMS_API_BASE__ || window.location.origin;
 
 async function req<T = any>(path: string, options?: RequestInit): Promise<T> {
+  const token = localStorage.getItem("wms_token") || localStorage.getItem("auth_token");
   const res = await fetch(`${API_BASE}/api${path}`, {
-    headers: { "Content-Type": "application/json", ...options?.headers },
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...options?.headers,
+    },
     ...options,
   });
   if (!res.ok) {
@@ -19,6 +24,7 @@ export const api = {
   // ─── 商品 ───
   getProducts: (p = 1, s = "", pg = 20) => req(`/products?page=${p}&size=${pg}&search=${encodeURIComponent(s)}`),
   getProduct: (id: string) => req(`/products/${id}`),
+  getProductInvoice: (id: string) => req(`/products/${id}/invoice`),
   createProduct: (d: any) => req("/products", { method: "POST", body: JSON.stringify(d) }),
   updateProduct: (id: string, d: any) => req(`/products/${id}`, { method: "PUT", body: JSON.stringify(d) }),
   deleteProduct: (id: string) => req(`/products/${id}`, { method: "DELETE" }),
@@ -76,14 +82,18 @@ export const api = {
   parseInvoiceFile: (filePath: string, filename: string, source = 'upload') =>
     req('/invoices/parse', { method: 'POST', body: JSON.stringify({ file_path: filePath, filename, source }) }),
   // 分类
+  // TODO: /invoice-classifier/process 路由需在 invoice_classifier 模块中注册后方可使用
   classifyInvoice: (invoice: any) =>
     req('/invoice-classifier/process', { method: 'POST', body: JSON.stringify({ invoice }) }),
   // 自动对账
   autoMatchInvoice: (invoice: any) =>
-    req('/invoices/auto-match', { method: 'POST', body: JSON.stringify({ invoice }) }),
+    req('/invoice-bridge/auto-match', { method: 'POST', body: JSON.stringify({ invoice }) }),
+  // 稽核纠错
+  auditInvoices: () => req('/invoice-bridge/audit', { method: 'POST' }),
+  applyAuditFix: (fixes: any[]) => req('/invoice-bridge/audit/fix', { method: 'POST', body: JSON.stringify({ fixes }) }),
   // 关联入库单
   reconcileInvoice: (invoiceNumber: string, inboundId: string) =>
-    req(`/invoices/${invoiceNumber}/reconcile`, { method: 'POST', body: JSON.stringify({ inbound_id: inboundId }) }),
+    req('/invoice-bridge/reconcile', { method: 'POST', body: JSON.stringify({ invoice_number: invoiceNumber, inbound_id: inboundId }) }),
   // 邮箱配置
   getEmailConfig: () => req('/invoice-collector/email/config'),
   setEmailConfig: (cfg: any) => req('/invoice-collector/email/config', { method: 'POST', body: JSON.stringify(cfg) }),

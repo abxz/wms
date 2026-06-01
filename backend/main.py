@@ -5,6 +5,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from middleware.jwt_auth import JWTAuthMiddleware
 from middleware.audit_log import AuditLogMiddleware
 from middleware.encrypt import init_crypto
+import models  # registers ORM models into _TABLE_MODEL
+from core.database import Base, engine
+
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="仓储管理系统", version="2.1")
 
@@ -39,13 +43,12 @@ from modules.invoices import register as reg_invoices
 from modules.barcode import register as reg_barcode
 from modules.dashboard import register as reg_dashboard
 from modules.warehouses import register as reg_warehouses
-from modules.auth import register as reg_auth                   # PDA认证(JWT)
-from modules.system_config import register as reg_config        # 系统配置
-from modules.stock_mutations import register as reg_mutations   # 库存审计
-from modules.import_export import register as reg_import        # 导入导出
-from modules.pda_sync import register as reg_pda_sync           # 🆕 PDA离线同步
-from modules.invoice_collector import register as reg_collector   # 🆕 发票采集
-from modules.invoice_classifier import register as reg_classifier # 🆕 发票分类
+from modules.auth import register as reg_auth
+from modules.system_config import register as reg_config
+from modules.stock_mutations import register as reg_mutations
+from modules.import_export import register as reg_import
+from modules.pda_sync import register as reg_pda_sync
+from modules.invoice_bridge import register as reg_invoice_bridge
 
 reg_products(app)
 reg_locations(app)
@@ -63,8 +66,7 @@ reg_config(app)
 reg_mutations(app)
 reg_import(app)
 reg_pda_sync(app)
-reg_collector(app)
-reg_classifier(app)
+reg_invoice_bridge(app)
 
 
 @app.get("/api/health")

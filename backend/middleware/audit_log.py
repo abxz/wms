@@ -5,7 +5,7 @@ from datetime import datetime
 import json
 import os
 
-AUDIT_DIR = "/root/.invoice-center/audit/"
+AUDIT_DIR = os.environ.get("WMS_AUDIT_DIR", "/var/log/wms/audit/")
 os.makedirs(AUDIT_DIR, exist_ok=True)
 
 class AuditLogMiddleware(BaseHTTPMiddleware):
@@ -26,9 +26,21 @@ class AuditLogMiddleware(BaseHTTPMiddleware):
             "ip": request.client.host if request.client else "unknown",
         }
         
-        response = await call_next(request)
-        entry["status_code"] = response.status_code
-        
+        try:
+            response = await call_next(request)
+            entry["status_code"] = response.status_code
+        except Exception as exc:
+            entry["status_code"] = 500
+            entry["error"] = str(exc)
+            today = datetime.utcnow().strftime("%Y-%m-%d")
+            log_path = os.path.join(AUDIT_DIR, f"{today}.jsonl")
+            try:
+                with open(log_path, "a") as f:
+                    f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+            except Exception:
+                pass
+            raise
+
         # 异步追加写入（当日文件）
         today = datetime.utcnow().strftime("%Y-%m-%d")
         log_path = os.path.join(AUDIT_DIR, f"{today}.jsonl")

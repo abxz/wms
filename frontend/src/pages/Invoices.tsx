@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { Invoice } from '../types';
 
-type Tab = 'list' | 'upload' | 'reconciliation' | 'settings';
+type Tab = 'list' | 'upload' | 'reconciliation' | 'audit' | 'settings';
 
 export default function Invoices() {
   const [tab, setTab] = useState<Tab>('list');
@@ -16,6 +16,7 @@ export default function Invoices() {
     { key: 'list', label: '发票台账' },
     { key: 'upload', label: '上传' },
     { key: 'reconciliation', label: '对账' },
+    { key: 'audit', label: '稽核纠错' },
     { key: 'settings', label: '设置' },
   ];
 
@@ -37,6 +38,7 @@ export default function Invoices() {
       {tab === 'list' && <InvoiceList />}
       {tab === 'upload' && <InvoiceUpload />}
       {tab === 'reconciliation' && <InvoiceReconciliation />}
+      {tab === 'audit' && <InvoiceAudit />}
       {tab === 'settings' && <InvoiceSettings />}
     </div>
   );
@@ -68,9 +70,7 @@ function InvoiceList() {
   };
   useEffect(() => { load(); }, [page, search]);
 
-  const filtered = search
-    ? items.filter(i => (i.invoice_number || '').includes(search) || (i.seller_name || '').includes(search))
-    : items;
+  const filtered = items;
 
   return (
     <div className="space-y-4">
@@ -345,6 +345,81 @@ function InvoiceReconciliation() {
             </div>
           ))}
         </div>
+      )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
+   稽核纠错
+   ═══════════════════════════════════════════════════════════ */
+function InvoiceAudit() {
+  const [result, setResult] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [fixing, setFixing] = useState(false);
+  const [msg, setMsg] = useState('');
+
+  const runAudit = async () => {
+    setLoading(true); setMsg(''); setSelected(new Set());
+    try {
+      const r = await api.auditInvoices();
+      setResult(r);
+    } catch (e: any) { setMsg(e?.message || '稽核失败'); }
+    setLoading(false);
+  };
+
+  const toggleSelect = (i: number, hasFix: boolean) => {
+    if (!hasFix) return;
+    setSelected(prev => { const s = new Set(prev); s.has(i) ? s.delete(i) : s.add(i); return s; });
+  };
+
+  const applyFix = async () => {
+    if (!result) return;
+    const fixes = [...selected]
+      .map(i => result.discrepancies[i])
+      .filter((d: any) => d.fix)
+      .map((d: any) => ({ product_id: d.product_id, field: d.fix.field, value: d.fix.correct }));
+    if (!fixes.length) return;
+    setFixing(true);
+    try {
+      const r = await api.applyAuditFix(fixes);
+      setMsg(`已修正 ${r.applied} 项`);
+      setSelected(new Set());
+    } catch (e: any) { setMsg(e?.message || '修正失败'); }
+    setFixing(false);
+  };
+
+  return (
+    <div className="space-y-4">
+      <button onClick={runAudit} disabled={loading}
+        className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm disabled:bg-gray-300">
+        {loading ? '稽核中...' : '开始稽核'}
+      </button>
+      {msg && <p className="text-sm text-green-600">{msg}</p>}
+      {result && (
+        <>
+          <p className="text-sm text-gray-500">发现 {result.total} 项差异</p>
+          {result.total === 0 && <p className="text-center text-green-600 py-6">数据一致，无差异</p>}
+          <div className="space-y-2">
+            {result.discrepancies.map((d: any, i: number) => (
+              <div key={i} className="bg-white border rounded-xl p-3 text-sm flex items-start gap-2">
+                <input type="checkbox" checked={selected.has(i)} onChange={() => toggleSelect(i, !!d.fix)}
+                  disabled={!d.fix} className="mt-0.5 shrink-0" />
+                <div>
+                  <p className="font-medium">{d.product_name || d.invoice_number} · <span className="text-red-500">{d.type}</span></p>
+                  <p className="text-gray-500">{d.detail}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          {selected.size > 0 && (
+            <button onClick={applyFix} disabled={fixing}
+              className="px-4 py-2 bg-green-600 text-white rounded-xl text-sm disabled:bg-gray-300">
+              {fixing ? '修正中...' : `确认修正 ${selected.size} 项`}
+            </button>
+          )}
+        </>
       )}
     </div>
   );

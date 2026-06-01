@@ -23,6 +23,12 @@ def route_list(
     return svc.list_invoices(page, size, search, status)
 
 
+# 统计路由必须在 /{iid} 之前，否则 "stats" 会被当作 iid
+@router.get("/stats/summary")
+def route_invoice_stats():
+    return svc.get_invoice_stats()
+
+
 @router.get("/{iid}")
 def route_get(iid: str):
     inv = svc.get_invoice(iid)
@@ -101,15 +107,6 @@ def route_reconcile(invoice_number: str, body: dict):
 
 
 # ═══════════════════════════════════════════════════════════════
-# 统计（供前端看板调用）
-# ═══════════════════════════════════════════════════════════════
-
-@router.get("/stats/summary")
-def route_invoice_stats():
-    return svc.get_invoice_stats()
-
-
-# ═══════════════════════════════════════════════════════════════
 # 解析（暂为占位，后续对接解析引擎后启用完整四级链）
 # ═══════════════════════════════════════════════════════════════
 
@@ -168,3 +165,16 @@ def route_auto_match(body: dict):
                     "confidence": "low",
                 })
     return {"status": "ok", "matches": matches, "total_matches": len(matches)}
+
+
+@router.post("/audit")
+def route_audit():
+    return svc.audit_invoices()
+
+
+@router.post("/audit/fix")
+def route_audit_fix(body: dict):
+    fixes = body.get("fixes", [])
+    if not fixes:
+        raise HTTPException(400, "fixes 不能为空")
+    return svc.apply_audit_fix(fixes)

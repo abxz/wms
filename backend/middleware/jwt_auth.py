@@ -5,12 +5,14 @@ from jose import jwt, JWTError
 import os
 from datetime import datetime
 
-JWT_SECRET = os.environ.get(
-    "WMS_JWT_SECRET",
-    open("/root/.invoice-center/secrets/jwt.key").read().strip()
-    if os.path.exists("/root/.invoice-center/secrets/jwt.key")
-    else "dev-secret-change-in-production"
-)
+# 统一 JWT 密钥 — 三项目共享同一密钥
+JWT_SECRET = os.environ.get("JWT_SECRET")
+if not JWT_SECRET:
+    _key_file = "/root/.hermes/shared/jwt.key"
+    if os.path.exists(_key_file):
+        JWT_SECRET = open(_key_file).read().strip()
+if not JWT_SECRET:
+    raise RuntimeError("JWT_SECRET 环境变量或 /root/.hermes/shared/jwt.key 必须配置")
 
 # 免认证路径白名单
 PUBLIC_PATHS = {
@@ -28,8 +30,8 @@ class JWTAuthMiddleware(BaseHTTPMiddleware):
         if request.url.path in PUBLIC_PATHS:
             return await call_next(request)
         
-        # PDA专用API（前缀 /api/pda/）需要认证
-        if request.url.path.startswith("/api/pda/"):
+        # 所有 /api/ 路由需要认证
+        if request.url.path.startswith("/api/"):
             auth_header = request.headers.get("Authorization", "")
             if not auth_header.startswith("Bearer "):
                 raise HTTPException(401, "缺少认证令牌")

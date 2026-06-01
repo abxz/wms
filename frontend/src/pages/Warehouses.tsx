@@ -29,7 +29,7 @@ export default function Warehouses() {
 
   const openAdd = () => {
     setEditing(null);
-    setForm(defaultForm);
+    setForm({ ...defaultForm });
     setModal(true);
   };
 
@@ -47,15 +47,19 @@ export default function Warehouses() {
   };
 
   const save = async () => {
-    if (editing) {
-      await api.updateWarehouse(editing.id, form);
-    } else {
-      await api.createWarehouse(form);
+    try {
+      if (editing) {
+        await api.updateWarehouse(editing.id, form);
+      } else {
+        await api.createWarehouse(form);
+      }
+      setModal(false);
+      setEditing(null);
+      setForm({ ...defaultForm });
+      load();
+    } catch (e: any) {
+      alert(e.message || "保存失败");
     }
-    setModal(false);
-    setEditing(null);
-    setForm(defaultForm);
-    load();
   };
 
   const confirmDelete = async () => {

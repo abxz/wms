@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../services/api";
 import Modal from "../components/Modal";
-import { Plus, Search, Edit2, Trash2, QrCode, Download } from "lucide-react";
+import { Plus, Search, Edit2, Trash2, QrCode, Download, FileText } from "lucide-react";
 import { Product, PaginatedResult } from "../types";
 
 export default function Products() {
@@ -14,6 +14,7 @@ export default function Products() {
   const [warehouses, setWarehouses] = useState<any[]>([]);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [invoiceDetail, setInvoiceDetail] = useState<any>(null);
   const [form, setForm] = useState({ name: "", sku: "", price: 0, category: "", barcode: "", unit: "个", warehouse_id: "", invoice_number: "" });
 
   const load = () => {
@@ -155,6 +156,13 @@ export default function Products() {
                 <QrCode size={16} />
               </button>
               <button
+                onClick={() => api.getProductInvoice(item.id).then(setInvoiceDetail).catch((e: any) => setErrorMsg(e?.message || '发票查询失败'))}
+                className="p-1.5 text-gray-400 hover:text-purple-500"
+                title="查看发票"
+              >
+                <FileText size={16} />
+              </button>
+              <button
                 onClick={() => openEdit(item)}
                 className="p-1.5 text-gray-400 hover:text-blue-500"
               >
@@ -250,6 +258,31 @@ export default function Products() {
         <p className="mb-4 text-gray-600">{errorMsg}</p>
         <div className="flex justify-end">
           <button onClick={() => setErrorMsg(null)} className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm">确定</button>
+        </div>
+      </Modal>
+
+      {/* 发票联动详情弹窗 */}
+      <Modal open={!!invoiceDetail} onClose={() => setInvoiceDetail(null)} title="发票联动详情">
+        {invoiceDetail?.invoice ? (
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between border-b pb-1"><span className="text-gray-500">发票号码</span><span className="font-medium">{invoiceDetail.invoice.invoice_number}</span></div>
+            <div className="flex justify-between border-b pb-1"><span className="text-gray-500">开票日期</span><span className="font-medium">{invoiceDetail.invoice.issue_date}</span></div>
+            <div className="flex justify-between border-b pb-1"><span className="text-gray-500">价税合计</span><span className="font-medium text-blue-600">¥{invoiceDetail.invoice.total_amount}</span></div>
+            <div className="flex justify-between border-b pb-1"><span className="text-gray-500">销售方</span><span className="font-medium">{invoiceDetail.invoice.seller_name}</span></div>
+            {invoiceDetail.siblings?.length > 0 && (
+              <>
+                <p className="font-medium pt-2">同票商品（{invoiceDetail.siblings.length}）</p>
+                {invoiceDetail.siblings.map((s: any) => (
+                  <p key={s.id} className="text-gray-500 pl-2">{s.name}{s.sku ? ` · ${s.sku}` : ''} · ¥{s.price}</p>
+                ))}
+              </>
+            )}
+          </div>
+        ) : (
+          <p className="text-gray-400 py-4 text-center">该商品未关联发票</p>
+        )}
+        <div className="flex justify-end mt-4">
+          <button onClick={() => setInvoiceDetail(null)} className="px-4 py-2 bg-gray-100 rounded-lg text-sm">关闭</button>
         </div>
       </Modal>
     </div>

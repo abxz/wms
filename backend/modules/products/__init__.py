@@ -40,3 +40,17 @@ def route_delete(pid: str):
     if not svc.delete_product(pid):
         raise HTTPException(404, "商品不存在")
     return {"ok": True}
+
+
+@router.get("/{pid}/invoice")
+def route_product_invoice(pid: str):
+    from core.database import all_
+    p = svc.get_product(pid)
+    if not p:
+        raise HTTPException(404, "商品不存在")
+    inv_number = p.get("invoice_number", "")
+    if not inv_number:
+        return {"invoice": None, "siblings": []}
+    invoice = next((i for i in all_("invoices.json") if i.get("invoice_number") == inv_number), None)
+    siblings = [x for x in svc.get_all_products() if x.get("invoice_number") == inv_number and x["id"] != pid]
+    return {"invoice": invoice, "siblings": siblings}

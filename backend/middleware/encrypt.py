@@ -32,17 +32,28 @@ def get_fernet():
 
 
 def encrypt(plaintext: str) -> str:
-    return get_fernet().encrypt(plaintext.encode()).decode()
+    f = get_fernet()
+    if f is None:
+        raise RuntimeError("加密模块未初始化，请先调用 init_crypto()")
+    return f.encrypt(plaintext.encode()).decode()
 
 
 def decrypt(ciphertext: str) -> str:
-    return get_fernet().decrypt(ciphertext.encode()).decode()
+    f = get_fernet()
+    if f is None:
+        raise RuntimeError("加密模块未初始化，请先调用 init_crypto()")
+    return f.decrypt(ciphertext.encode()).decode()
 
 
 def rotate_keys():
-    """密钥轮换"""
+    """密钥轮换（保留带时间戳的历史密钥）"""
+    from datetime import datetime
+    import shutil
     if FERNET_KEY_FILE.exists():
-        FERNET_KEY_FILE.rename(FERNET_PREV_KEY_FILE)
+        ts = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+        backup = SECRET_DIR / f"fernet.{ts}.key"
+        shutil.copy(FERNET_KEY_FILE, backup)
+        shutil.copy(FERNET_KEY_FILE, FERNET_PREV_KEY_FILE)
     new_key = Fernet.generate_key()
     FERNET_KEY_FILE.write_text(new_key.decode())
     FERNET_KEY_FILE.chmod(0o600)

@@ -137,17 +137,22 @@ def reconcile_invoice(invoice_number: str, inbound_id: str) -> dict | None:
 
 
 def update_file_by_field(file: str, field: str, value: str, updates: dict) -> dict | None:
-    import threading, json
-    from core.database import _lock, _load, _save, _ts
-    with _lock:
-        data = _load(file)
-        for item in data:
-            if item.get(field) == value:
-                item.update(updates)
-                item["updated_at"] = _ts()
-                _save(file, data)
-                return item
-    return None
+    from core.database import all_, update as db_update, _TABLE_MODEL
+    M = _TABLE_MODEL.get(file)
+    if M is None:
+        return None
+    from core.database import SessionLocal, _ts
+    with SessionLocal() as db:
+        row = db.query(M).filter(getattr(M, field) == value).first()
+        if not row:
+            return None
+        updates["updated_at"] = _ts()
+        for k, v in updates.items():
+            if hasattr(row, k):
+                setattr(row, k, v)
+        db.commit()
+        db.refresh(row)
+        return {c.name: getattr(row, c.name) for c in row.__table__.columns}
 
 
 # ─── 统计（供看板调用） ──────────────────────────────────────
@@ -183,3 +188,58 @@ def get_invoice_stats() -> dict:
         "by_source": by_source,
         "by_status": by_status,
     }
+
+
+_AUDIT_FIX_ALLOWED_FIELDS = {"price", "quantity", "min_stock", "max_stock"}
+
+
+def audit_invoices() -> dict:
+    from core.database import all_
+    try:
+        invoices = all_(FILE)
+        products = all_("products.json")
+        inbounds = all_("inbound.json")
+    except Exception as e:
+        return {"discrepancies": [], "total": 0, "error": str(e)}
+    inbound_map = {ib["id"]: ib for ib in inbounds}
+    discrepancies = []
+    for inv in invoices:
+        inv_no = inv.get("invoice_number", "")
+        inbound_id = inv.get("wms_inbound_id", "")
+        if not inv_no or not inbound_id:
+            continue
+        inbound = inbound_map.get(inbound_id)
+        if not inbound:
+            discrepancies.append({"invoice_number": inv_no, "type": "missing_inbound",
+                                   "detail": f"关联入库单 {inbound_id} 不存在"})
+            continue
+        inv_products = [p for p in products if p.get("invoice_number") == inv_no]
+        ib_items = {item["product_id"]: item for item in inbound.get("items", [])}
+        for p in inv_products:
+            ib_item = ib_items.get(p["id"])
+            if not ib_item:
+                discrepancies.append({"invoice_number": inv_no, "product_id": p["id"],
+                                       "product_name": p.get("name"), "type": "product_not_in_inbound",
+                                       "detail": "商品在发票中但不在入库单"})
+            else:
+                inv_price = float(p.get("price", 0))
+                ib_price = float(ib_item.get("price", 0))
+                denom = max(inv_price, ib_price)
+                if denom > 0 and abs(inv_price - ib_price) / denom > 0.01:
+                    discrepancies.append({"invoice_number": inv_no, "product_id": p["id"],
+                                           "product_name": p.get("name"), "type": "price_mismatch",
+                                           "detail": f"价格不符: 发票¥{inv_price} vs 入库¥{ib_price}",
+                                           "fix": {"field": "price", "current": inv_price, "correct": ib_price}})
+    return {"discrepancies": discrepancies, "total": len(discrepancies)}
+
+
+def apply_audit_fix(fixes: list) -> dict:
+    applied = 0
+    for fix in fixes:
+        pid = fix.get("product_id")
+        field = fix.get("field")
+        value = fix.get("value")
+        if pid and field in _AUDIT_FIX_ALLOWED_FIELDS and value is not None:
+            update("products.json", pid, {field: value})
+            applied += 1
+    return {"applied": applied}

@@ -1,30 +1,35 @@
-"""系统配置模块"""
-from fastapi import APIRouter, HTTPException
-from core.config import DATA_DIR
-import json
+"""系统配置模块 — PostgreSQL backend"""
+from fastapi import APIRouter
+from core.database import all_, add, update, get_by
+from core.utils import generate_id
 
 router = APIRouter(prefix="/api/system", tags=["系统配置"])
+
+_DEFAULTS = {
+    "inbound_start_no": "IN-0001",
+    "inbound_current_no": "IN-0001",
+    "outbound_start_no": "OUT-0001",
+    "outbound_current_no": "OUT-0001",
+    "max_items_per_order": "7",
+}
 
 def register(app):
     app.include_router(router)
 
 def _get_config() -> dict:
-    path = DATA_DIR / "system_config.json"
-    if not path.exists():
-        return {
-            "inbound_start_no": "IN-0001",
-            "inbound_current_no": "IN-0001",
-            "outbound_start_no": "OUT-0001",
-            "outbound_current_no": "OUT-0001",
-            "max_items_per_order": 7
-        }
-    with open(path) as f:
-        return json.load(f)
+    rows = all_("system_config")
+    result = dict(_DEFAULTS)
+    for row in rows:
+        result[row["key"]] = row["value"]
+    return result
 
 def _save_config(config: dict):
-    path = DATA_DIR / "system_config.json"
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(config, f, ensure_ascii=False, indent=2)
+    for k, v in config.items():
+        existing = get_by("system_config", "key", k)
+        if existing:
+            update("system_config", existing["id"], {"value": str(v)})
+        else:
+            add("system_config", {"id": generate_id(), "key": k, "value": str(v)})
 
 @router.get("/config")
 def get_config():

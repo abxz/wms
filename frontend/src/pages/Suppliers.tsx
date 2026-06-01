@@ -32,12 +32,16 @@ export default function Suppliers() {
     setModal(true);
   };
   const save = async () => {
-    if (editing) await api.updateSupplier(editing.id, form);
-    else await api.createSupplier(form);
-    setModal(false);
-    setEditing(null);
-    setForm({ name: "", contact: "", phone: "", address: "", remark: "" });
-    load();
+    try {
+      if (editing) await api.updateSupplier(editing.id, form);
+      else await api.createSupplier(form);
+      setModal(false);
+      setEditing(null);
+      setForm({ name: "", contact: "", phone: "", address: "", remark: "" });
+      load();
+    } catch (e: any) {
+      alert(e.message || "保存失败");
+    }
   };
   const confirmDelete = (id: string) => {
     setPendingDeleteId(id);

@@ -1,153 +1,174 @@
-"""JSON 文件存储引擎 —— 零数据库依赖"""
-import json
-import threading
-from pathlib import Path
-from typing import Any, Optional
+"""SQLAlchemy database engine and session + compatibility CRUD layer"""
+import os
 from datetime import datetime
-from core.config import DATA_DIR
+from typing import Any, Optional
+from sqlalchemy import create_engine, text
+from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
-_lock = threading.Lock()
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise RuntimeError("DATABASE_URL 环境变量必须配置")
+
+engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
+
+
+class Base(DeclarativeBase):
+    pass
+
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 
 def _ts() -> str:
     return datetime.now().isoformat(timespec="seconds")
 
 
-def _load(file: str) -> list[dict]:
-    path = DATA_DIR / file
-    if not path.exists():
-        return []
-    with open(path, "r", encoding="utf-8") as f:
-        return json.load(f)
+# ─── Table name → ORM model registry ─────────────────────────────────────────
+# Populated by models.py after import
+_TABLE_MODEL: dict = {}
 
 
-def _save(file: str, data: list[dict]):
-    """原子写入：临时文件 → rename 替换，防止写一半崩溃导致文件损坏"""
-    path = DATA_DIR / file
-    tmp = path.with_suffix(".tmp")
-    with open(tmp, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-    tmp.rename(path)
+def _model(table: str):
+    m = _TABLE_MODEL.get(table)
+    if m is None:
+        raise KeyError(f"No ORM model registered for table '{table}'")
+    return m
 
 
-# ─── 公共 CRUD ────────────────────────────────────────────────
-
-def all_(file: str) -> list[dict]:
-    return _load(file)
+def _row_to_dict(row) -> dict:
+    return {c.name: getattr(row, c.name) for c in row.__table__.columns}
 
 
-def get_by(file: str, field: str, value: Any) -> Optional[dict]:
-    for item in _load(file):
-        if item.get(field) == value:
-            return item
-    return None
+# ─── Public CRUD (same signatures as the old JSON layer) ─────────────────────
+
+def all_(table: str) -> list[dict]:
+    M = _model(table)
+    with SessionLocal() as db:
+        return [_row_to_dict(r) for r in db.query(M).all()]
 
 
-def get_by_id(file: str, id: str) -> Optional[dict]:
-    return get_by(file, "id", id)
+def get_by(table: str, field: str, value: Any) -> Optional[dict]:
+    M = _model(table)
+    with SessionLocal() as db:
+        row = db.query(M).filter(getattr(M, field) == value).first()
+        return _row_to_dict(row) if row else None
 
 
-def add(file: str, record: dict) -> dict:
-    with _lock:
-        data = _load(file)
-        from core.utils import generate_id
-        record.setdefault("id", generate_id())
-        record.setdefault("created_at", _ts())
-        record.setdefault("updated_at", _ts())
-        data.append(record)
-        _save(file, data)
-    return record
+def get_by_id(table: str, id: str) -> Optional[dict]:
+    return get_by(table, "id", id)
 
 
-def update(file: str, id: str, updates: dict) -> Optional[dict]:
-    with _lock:
-        data = _load(file)
-        for item in data:
-            if item["id"] == id:
-                item.update(updates)
-                item["updated_at"] = _ts()
-                _save(file, data)
-                return item
-    return None
+def add(table: str, record: dict) -> dict:
+    from core.utils import generate_id
+    M = _model(table)
+    record.setdefault("id", generate_id())
+    record.setdefault("created_at", _ts())
+    record.setdefault("updated_at", _ts())
+    with SessionLocal() as db:
+        row = M(**record)
+        db.add(row)
+        db.commit()
+        db.refresh(row)
+        return _row_to_dict(row)
 
 
-def delete(file: str, id: str) -> bool:
-    with _lock:
-        data = _load(file)
-        new_data = [d for d in data if d["id"] != id]
-        if len(new_data) == len(data):
+def update(table: str, id: str, updates: dict) -> Optional[dict]:
+    M = _model(table)
+    updates["updated_at"] = _ts()
+    with SessionLocal() as db:
+        row = db.query(M).filter(M.id == id).first()
+        if not row:
+            return None
+        for k, v in updates.items():
+            if hasattr(row, k):
+                setattr(row, k, v)
+        db.commit()
+        db.refresh(row)
+        return _row_to_dict(row)
+
+
+def delete(table: str, id: str) -> bool:
+    M = _model(table)
+    with SessionLocal() as db:
+        row = db.query(M).filter(M.id == id).first()
+        if not row:
             return False
-        _save(file, new_data)
-    return True
+        db.delete(row)
+        db.commit()
+        return True
 
 
-def query(file: str, **filters) -> list[dict]:
-    """按条件过滤"""
-    data = _load(file)
-    for k, v in filters.items():
-        if v is not None:
-            data = [d for d in data if d.get(k) == v]
-    return data
+def query(table: str, **filters) -> list[dict]:
+    M = _model(table)
+    with SessionLocal() as db:
+        q = db.query(M)
+        for k, v in filters.items():
+            if v is not None:
+                q = q.filter(getattr(M, k) == v)
+        return [_row_to_dict(r) for r in q.all()]
 
 
-def atomic_modify(file: str, record_id: str, modifier):
-    """原子读-改-写：在同一个锁内完成查找、修改、保存，防止并发丢失更新
-    
-    modifier 接收当前 dict，返回修改后的 dict（或 None 表示不修改）
-    """
-    with _lock:
-        data = _load(file)
-        for i, item in enumerate(data):
-            if item["id"] == record_id:
-                new = modifier(dict(item))
-                if new is not None:
-                    new["updated_at"] = _ts()
-                    data[i] = new
-                    _save(file, data)
-                    return new
-                return item
-    return None
-
-
-def atomic_check_and_deduct(file: str, product_id: str, requested_qty: float) -> bool:
-    """原子检查库存并扣减（防超卖）
-    返回 True 表示扣减成功，False 表示库存不足或商品不存在
-    """
-    with _lock:
-        data = _load(file)
-        for i, item in enumerate(data):
-            if item.get("product_id") == product_id:
-                current = item.get("quantity", 0)
-                if current < requested_qty:
-                    return False
-                item["quantity"] = current - requested_qty
-                item["updated_at"] = _ts()
-                data[i] = item
-                _save(file, data)
-                return True
-        # 没有库存记录，无法出库
-        return False
-
-
-def paginate(file: str, page: int = 1, size: int = 20, search: str = "",
+def paginate(table: str, page: int = 1, size: int = 20, search: str = "",
              sort_by: str = "updated_at", sort_desc: bool = True,
              search_fields: list[str] | None = None) -> dict:
-    """分页 + 搜索 + 排序"""
-    data = _load(file)
-    if search and search_fields:
-        search = search.lower()
-        data = [d for d in data if any(
-            search in str(d.get(f, "")).lower() for f in search_fields
-        )]
-    if sort_by:
-        data.sort(key=lambda d: d.get(sort_by, ""), reverse=sort_desc)
-    total = len(data)
-    start = (page - 1) * size
-    items = data[start:start + size]
-    return {
-        "items": items,
-        "total": total,
-        "page": page,
-        "size": size,
-        "pages": (total + size - 1) // size,
-    }
+    from sqlalchemy import or_, desc, asc
+    M = _model(table)
+    with SessionLocal() as db:
+        q = db.query(M)
+        if search and search_fields:
+            s = f"%{search.lower()}%"
+            q = q.filter(or_(*[
+                getattr(M, f).ilike(s) for f in search_fields if hasattr(M, f)
+            ]))
+        if sort_by and hasattr(M, sort_by):
+            col = getattr(M, sort_by)
+            q = q.order_by(desc(col) if sort_desc else asc(col))
+        total = q.count()
+        items = q.offset((page - 1) * size).limit(size).all()
+        return {
+            "items": [_row_to_dict(r) for r in items],
+            "total": total,
+            "page": page,
+            "size": size,
+            "pages": (total + size - 1) // size,
+        }
+
+
+def atomic_modify(table: str, record_id: str, modifier) -> Optional[dict]:
+    M = _model(table)
+    with SessionLocal() as db:
+        row = db.query(M).with_for_update().filter(M.id == record_id).first()
+        if not row:
+            return None
+        d = _row_to_dict(row)
+        new = modifier(d)
+        if new is not None:
+            new["updated_at"] = _ts()
+            for k, v in new.items():
+                if hasattr(row, k):
+                    setattr(row, k, v)
+            db.commit()
+            db.refresh(row)
+            return _row_to_dict(row)
+        return d
+
+
+def atomic_check_and_deduct(table: str, product_id: str, requested_qty: float) -> bool:
+    M = _model(table)
+    with SessionLocal() as db:
+        row = db.query(M).with_for_update().filter(M.product_id == product_id).first()
+        if not row:
+            return False
+        current = float(row.quantity or 0)
+        if current < requested_qty:
+            return False
+        row.quantity = current - requested_qty
+        row.updated_at = _ts()
+        db.commit()
+        return True

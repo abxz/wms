@@ -25,7 +25,7 @@ def generate_barcode(body: dict):
     if not text:
         raise HTTPException(400, "text 不能为空")
     try:
-        code128 = barcode.get("code128", text, writer=ImageWriter())
+        code128 = _barcode_pkg.get("code128", text, writer=ImageWriter())
         buf = io.BytesIO()
         code128.write(buf)
         return Response(content=buf.getvalue(), media_type="image/png")
