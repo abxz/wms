@@ -114,7 +114,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               to={item.path}
               onClick={() => setSidebarOpen(false)}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200
+                `flex items-center gap-3 px-3 py-2.5 rounded-xl text-base transition-all duration-200
                 ${isActive
                   ? 'bg-gradient-to-r from-violet-500 to-violet-600 text-white shadow-lg'
                   : 'text-slate-400 hover:bg-slate-800/80 hover:text-slate-200'}`

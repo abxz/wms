@@ -29,3 +29,8 @@ def route_by_location(lid: str):
 @router.post("/adjust")
 def route_adjust(body: dict):
     return svc.adjust_inventory(body.get("product_id"), body.get("location_id", ""), float(body.get("quantity", 0)))
+
+@router.put("/{inv_id}")
+def route_update(inv_id: str, body: dict):
+    from core.database import update
+    return update("inventory", inv_id, body)

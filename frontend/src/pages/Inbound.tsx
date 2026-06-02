@@ -39,7 +39,7 @@ export default function Inbound() {
     <div>
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-bold">📥 入库管理</h1>
-        <button onClick={() => setModal(true)} className="bg-blue-500 text-white px-3 py-2 rounded-lg text-sm flex items-center gap-1"><Plus size={16} /> 新建入库</button>
+        <button onClick={() => setModal(true)} className="bg-blue-500 text-white px-4 py-2.5 rounded-lg text-base font-medium flex items-center gap-1 min-w-[110px]"><Plus size={16} /> 新建入库</button>
       </div>
 
       <div className="space-y-2">
@@ -53,8 +53,8 @@ export default function Inbound() {
               </span>
             </div>
             {item.status === "pending" && (
-              <button onClick={() => complete(item.id)} className="p-1.5 text-green-500" title="完成入库">
-                <CheckCircle size={18} />
+              <button onClick={() => complete(item.id)} className="px-4 py-2 bg-green-500 text-white rounded-lg text-base font-medium min-w-[100px]" title="完成入库">
+                完成入库
               </button>
             )}
           </div>
@@ -117,7 +117,7 @@ export default function Inbound() {
               ¥{form.items.reduce((sum: number, it: any) => sum + (it.quantity || 0) * (it.price || 0), 0).toFixed(2)}
             </span>
           </div>
-          <button onClick={createAsync} className="w-full bg-blue-500 text-white py-2 rounded-lg font-medium">创建入库单</button>
+          <button onClick={createAsync} className="w-full bg-blue-500 text-white py-2.5 rounded-lg text-base font-medium min-w-[100px]">创建入库单</button>
         </div>
       </Modal>
     </div>

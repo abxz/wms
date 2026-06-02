@@ -172,6 +172,7 @@ export default function Products() {
           <input
             className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm"
             placeholder="搜索商品名/SKU/条码..."
+
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
           />
@@ -194,7 +195,7 @@ export default function Products() {
             <thead className="bg-gray-50 border-b text-gray-600">
               <tr>
                 <th className="px-3 py-2.5 text-left w-12">序号</th>
-                <th className="px-3 py-2.5 text-left">商品编号</th>
+                <th className="px-3 py-2.5 text-left font-semibold">SKU</th>
                 <th className="px-3 py-2.5 text-left">商品名称</th>
                 <th className="px-3 py-2.5 text-left">规格</th>
                 <th className="px-3 py-2.5 text-left">单位</th>
@@ -268,10 +269,7 @@ export default function Products() {
       <Modal open={modal} onClose={() => setModal(false)} title={edit ? "编辑商品" : "新增商品"}>
         <div className="space-y-3">
           <div><label className="block text-sm font-medium text-gray-700 mb-1">商品名称 *</label><input className="w-full border rounded-lg p-2 text-sm" placeholder="请输入商品名称" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
-          <div className="grid grid-cols-2 gap-3">
-            <div><label className="block text-sm font-medium text-gray-700 mb-1">SKU</label><input className="w-full border rounded-lg p-2 text-sm" placeholder="SKU编码" value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} /></div>
-            <div><label className="block text-sm font-medium text-gray-700 mb-1">规格</label><input className="w-full border rounded-lg p-2 text-sm" placeholder="规格型号" value={form.spec} onChange={(e) => setForm({ ...form, spec: e.target.value })} /></div>
-          </div>
+          <div><label className="block text-sm font-medium text-gray-700 mb-1">规格</label><input className="w-full border rounded-lg p-2 text-sm" placeholder="规格型号" value={form.spec} onChange={(e) => setForm({ ...form, spec: e.target.value })} /></div>
           <div className="grid grid-cols-3 gap-3">
             <div><label className="block text-sm font-medium text-gray-700 mb-1">单价</label><input className="w-full border rounded-lg p-2 text-sm" type="number" placeholder="0.00" value={form.price} onChange={(e) => setForm({ ...form, price: +e.target.value })} /></div>
             <div><label className="block text-sm font-medium text-gray-700 mb-1">单位</label><input className="w-full border rounded-lg p-2 text-sm" placeholder="个" value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} /></div>
@@ -289,7 +287,7 @@ export default function Products() {
                 <option value="外加剂">外加剂</option>
               </select>
             </div>
-            <div><label className="block text-sm font-medium text-gray-700 mb-1">SKU（自动生成）</label><input className="w-full border rounded-lg p-2 text-sm bg-gray-50" placeholder="选择分类后自动生成" value={form.sku} readOnly /></div>
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">SKU</label><input className="w-full border rounded-lg p-2 text-sm bg-gray-50" placeholder={edit ? "" : "选择分类后自动生成"} value={form.sku} readOnly /></div>
           </div>
           <div><label className="block text-sm font-medium text-gray-700 mb-1">条码</label><input className="w-full border rounded-lg p-2 text-sm" placeholder="条形码" value={form.barcode} onChange={(e) => setForm({ ...form, barcode: e.target.value })} /></div>
           <div><label className="block text-sm font-medium text-gray-700 mb-1">供应商</label><select className="w-full border rounded-lg p-2 text-sm" value={form.supplier_id} onChange={(e) => setForm({ ...form, supplier_id: e.target.value })}>

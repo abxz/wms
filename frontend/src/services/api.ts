@@ -62,6 +62,7 @@ export const api = {
 
   // ─── 库存 ───
   getInventory: () => req("/inventory"),
+  updateInventory: (id: string, d: any) => req(`/inventory/${id}`, { method: "PUT", body: JSON.stringify(d) }),
   getAlerts: () => req("/inventory/alerts"),
   adjustInventory: (d: any) => req("/inventory/adjust", { method: "POST", body: JSON.stringify(d) }),
 

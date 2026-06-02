@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../services/api";
 import Modal from "../components/Modal";
-import { Plus, Search, Edit2, Trash2, Warehouse } from "lucide-react";
+import { Plus, Search, Edit2, Trash2 } from "lucide-react";
 
 const defaultForm = { name: "", code: "", address: "", contact: "", phone: "", remark: "" };
 
@@ -96,59 +96,43 @@ export default function Warehouses() {
         />
       </div>
 
-      {/* 仓库卡片列表 */}
-      <div className="space-y-3">
-        {filtered.map((item: any) => (
-          <div
-            key={item.id}
-            className="bg-white rounded-xl p-4 border flex items-start gap-3"
-          >
-            <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0">
-              <Warehouse size={20} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-medium">{item.name}</span>
-                <span className="text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">
-                  {item.code}
-                </span>
-              </div>
-              {item.address && (
-                <p className="text-xs text-gray-400 mt-0.5 truncate">
-                  📍 {item.address}
-                </p>
+      <div className="bg-white rounded-xl border overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 border-b text-gray-600">
+              <tr>
+                <th className="px-3 py-2.5 text-left font-semibold">名称</th>
+                <th className="px-3 py-2.5 text-left font-semibold">编码</th>
+                <th className="px-3 py-2.5 text-left font-semibold">地址</th>
+                <th className="px-3 py-2.5 text-left font-semibold">联系人</th>
+                <th className="px-3 py-2.5 text-left font-semibold">电话</th>
+                <th className="px-3 py-2.5 text-left font-semibold">备注</th>
+                <th className="px-3 py-2.5 text-center font-semibold">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((item: any) => (
+                <tr key={item.id} className="border-b hover:bg-gray-50 transition-colors">
+                  <td className="px-3 py-2.5 font-medium">{item.name}</td>
+                  <td className="px-3 py-2.5 font-mono text-xs">{item.code}</td>
+                  <td className="px-3 py-2.5 text-gray-500">{item.address || "-"}</td>
+                  <td className="px-3 py-2.5 text-gray-500">{item.contact || "-"}</td>
+                  <td className="px-3 py-2.5 text-gray-500">{item.phone || "-"}</td>
+                  <td className="px-3 py-2.5 text-gray-400">{item.remark || "-"}</td>
+                  <td className="px-3 py-2.5 text-center">
+                    <div className="flex items-center gap-1 justify-center">
+                      <button onClick={() => openEdit(item)} className="p-1.5 text-gray-400 hover:text-blue-500"><Edit2 size={15} /></button>
+                      <button onClick={() => setDeleting(item)} className="p-1.5 text-gray-400 hover:text-red-500"><Trash2 size={15} /></button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {filtered.length === 0 && (
+                <tr><td colSpan={7} className="text-center text-gray-400 py-8">{search ? "未找到匹配的仓库" : "暂无仓库，点击右上角新增"}</td></tr>
               )}
-              <div className="flex items-center gap-3 mt-1 text-xs text-gray-400">
-                {item.contact && <span>👤 {item.contact}</span>}
-                {item.phone && <span>📞 {item.phone}</span>}
-              </div>
-              {item.remark && (
-                <p className="text-xs text-gray-300 mt-1 truncate">
-                  {item.remark}
-                </p>
-              )}
-            </div>
-            <div className="flex flex-col gap-1 flex-shrink-0">
-              <button
-                onClick={() => openEdit(item)}
-                className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400"
-              >
-                <Edit2 size={15} />
-              </button>
-              <button
-                onClick={() => setDeleting(item)}
-                className="p-1.5 rounded-lg hover:bg-red-50 text-red-400"
-              >
-                <Trash2 size={15} />
-              </button>
-            </div>
-          </div>
-        ))}
-        {filtered.length === 0 && (
-          <p className="text-center text-gray-400 py-12">
-            {search ? "未找到匹配的仓库" : "暂无仓库，点击右上角新增"}
-          </p>
-        )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* 新增/编辑弹窗 */}

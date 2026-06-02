@@ -36,7 +36,7 @@ export default function Outbound() {
     <div>
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-bold">📤 出库管理</h1>
-        <button onClick={() => setModal(true)} className="bg-blue-500 text-white px-3 py-2 rounded-lg text-sm flex items-center gap-1"><Plus size={16} /> 新建出库</button>
+        <button onClick={() => setModal(true)} className="bg-blue-500 text-white px-4 py-2.5 rounded-lg text-base font-medium flex items-center gap-1 min-w-[110px]"><Plus size={16} /> 新建出库</button>
       </div>
       <div className="space-y-2">
         {items.map((item: any) => (
@@ -53,8 +53,8 @@ export default function Outbound() {
               </span>
             </div>
             {item.status !== "completed" && item.status !== "cancelled" && (
-              <button onClick={() => complete(item.id)} className="p-1.5 text-green-500 hover:text-green-700" title="完成出库">
-                <CheckCircle size={18} />
+              <button onClick={() => complete(item.id)} className="px-4 py-2 bg-green-500 text-white rounded-lg text-base font-medium min-w-[100px]" title="完成出库">
+                完成出库
               </button>
             )}
           </div>
@@ -75,7 +75,7 @@ export default function Outbound() {
                 onChange={e => { const ni = [...form.items]; ni[i] = { ...ni[i], quantity: +e.target.value }; setForm({ ...form, items: ni }); }} />
             </div>
           ))}
-          <button onClick={create} className="w-full bg-blue-500 text-white py-2 rounded-lg font-medium">创建出库单</button>
+          <button onClick={create} className="w-full bg-blue-500 text-white py-2.5 rounded-lg text-base font-medium min-w-[100px]">创建出库单</button>
         </div>
       </Modal>
 

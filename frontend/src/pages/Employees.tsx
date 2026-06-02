@@ -128,28 +128,49 @@ export default function Employees() {
         />
       </div>
 
-      <div className="space-y-2">
-        {items.map((item: any) => (
-          <div key={item.id} className="bg-white rounded-xl p-3 border flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-2">
-                <p className="font-medium">{item.name} <span className="text-xs text-gray-400">{item.employee_no}</span></p>
-                {item.role && (
-                  <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${ROLE_COLORS[item.role] || "bg-gray-100 text-gray-600"}`}>
-                    {ROLE_LABELS[item.role] || item.role}
-                  </span>
-                )}
-              </div>
-              <p className="text-xs text-gray-400">{item.department || "未分配"} · 额度: ¥{item.monthly_used}/{item.monthly_quota}</p>
-            </div>
-            <div className="flex gap-1">
-              <button onClick={() => downloadQR(item)} className="p-1.5 text-gray-400 hover:text-green-500" title="二维码"><QrCode size={15} /></button>
-              <button onClick={() => openEdit(item)} className="p-1.5 text-gray-400 hover:text-blue-500"><Edit2 size={15} /></button>
-              <button onClick={() => confirmDelete(item.id)} className="p-1.5 text-gray-400 hover:text-red-500"><Trash2 size={15} /></button>
-            </div>
-          </div>
-        ))}
-        {items.length === 0 && <p className="text-center text-gray-400 py-8">暂无员工</p>}
+      <div className="bg-white rounded-xl border overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 border-b text-gray-600">
+              <tr>
+                <th className="px-3 py-2.5 text-left font-semibold">姓名/工号</th>
+                <th className="px-3 py-2.5 text-left font-semibold">角色</th>
+                <th className="px-3 py-2.5 text-left font-semibold">部门</th>
+                <th className="px-3 py-2.5 text-left font-semibold">月度额度</th>
+                <th className="px-3 py-2.5 text-center font-semibold">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((item: any) => (
+                <tr key={item.id} className="border-b hover:bg-gray-50 transition-colors">
+                  <td className="px-3 py-2.5">
+                    <span className="font-medium">{item.name}</span>
+                    <span className="text-xs text-gray-400 ml-1">{item.employee_no}</span>
+                  </td>
+                  <td className="px-3 py-2.5">
+                    {item.role && (
+                      <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${ROLE_COLORS[item.role] || "bg-gray-100 text-gray-600"}`}>
+                        {ROLE_LABELS[item.role] || item.role}
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-3 py-2.5 text-gray-500">{item.department || "未分配"}</td>
+                  <td className="px-3 py-2.5 text-gray-500">¥{item.monthly_used}/{item.monthly_quota}</td>
+                  <td className="px-3 py-2.5 text-center">
+                    <div className="flex items-center gap-1 justify-center">
+                      <button onClick={() => downloadQR(item)} className="p-1.5 text-gray-400 hover:text-green-500" title="二维码"><QrCode size={15} /></button>
+                      <button onClick={() => openEdit(item)} className="p-1.5 text-gray-400 hover:text-blue-500"><Edit2 size={15} /></button>
+                      <button onClick={() => confirmDelete(item.id)} className="p-1.5 text-gray-400 hover:text-red-500"><Trash2 size={15} /></button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {items.length === 0 && (
+                <tr><td colSpan={5} className="text-center text-gray-400 py-8">暂无员工</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <Modal open={modal} onClose={() => setModal(false)} title={editing ? "编辑员工" : "新增员工"}>

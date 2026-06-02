@@ -64,20 +64,41 @@ export default function Suppliers() {
           <button onClick={openNew} className="bg-blue-500 text-white px-3 py-2 rounded-lg text-sm flex items-center gap-1"><Plus size={16} /> 新增</button>
         </div>
       </div>
-      <div className="space-y-2">
-        {items.map((item: any) => (
-          <div key={item.id} className="bg-white rounded-xl p-3 border flex items-center justify-between">
-            <div>
-              <p className="font-medium">{item.name}</p>
-              <p className="text-xs text-gray-400">{item.contact} · {item.phone} {item.address ? `· ${item.address}` : ""}</p>
-            </div>
-            <div className="flex gap-1">
-              <button onClick={() => openEdit(item)} className="p-1.5 text-gray-400 hover:text-blue-500"><Edit2 size={15} /></button>
-              <button onClick={() => confirmDelete(item.id)} className="p-1.5 text-gray-400 hover:text-red-500"><Trash2 size={15} /></button>
-            </div>
-          </div>
-        ))}
-        {items.length === 0 && <p className="text-center text-gray-400 py-8">暂无供应商</p>}
+      <div className="bg-white rounded-xl border overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 border-b text-gray-600">
+              <tr>
+                <th className="px-3 py-2.5 text-left font-semibold">名称</th>
+                <th className="px-3 py-2.5 text-left font-semibold">联系人</th>
+                <th className="px-3 py-2.5 text-left font-semibold">电话</th>
+                <th className="px-3 py-2.5 text-left font-semibold">地址</th>
+                <th className="px-3 py-2.5 text-left font-semibold">备注</th>
+                <th className="px-3 py-2.5 text-center font-semibold">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((item: any) => (
+                <tr key={item.id} className="border-b hover:bg-gray-50 transition-colors">
+                  <td className="px-3 py-2.5 font-medium">{item.name}</td>
+                  <td className="px-3 py-2.5 text-gray-500">{item.contact || "-"}</td>
+                  <td className="px-3 py-2.5 text-gray-500">{item.phone || "-"}</td>
+                  <td className="px-3 py-2.5 text-gray-500">{item.address || "-"}</td>
+                  <td className="px-3 py-2.5 text-gray-400">{item.remark || "-"}</td>
+                  <td className="px-3 py-2.5 text-center">
+                    <div className="flex items-center gap-1 justify-center">
+                      <button onClick={() => openEdit(item)} className="p-1.5 text-gray-400 hover:text-blue-500"><Edit2 size={15} /></button>
+                      <button onClick={() => confirmDelete(item.id)} className="p-1.5 text-gray-400 hover:text-red-500"><Trash2 size={15} /></button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {items.length === 0 && (
+                <tr><td colSpan={6} className="text-center text-gray-400 py-8">暂无供应商</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
       <Modal open={modal} onClose={() => setModal(false)} title={editing ? "编辑供应商" : "新增供应商"}>
         <div className="space-y-3">
