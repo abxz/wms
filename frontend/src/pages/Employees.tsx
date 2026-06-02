@@ -184,8 +184,25 @@ export default function Employees() {
   const [bulkConfirmModal, setBulkConfirmModal] = useState(false);
   const [importModal, setImportModal] = useState(false);
 
+  const [configDepts, setConfigDepts] = useState<string[]>([]);
+  const [configPositions, setConfigPositions] = useState<string[]>([]);
+  const [configJobTypes, setConfigJobTypes] = useState<string[]>([]);
+
+  const loadConfigs = async () => {
+    try {
+      const [d, p, j] = await Promise.all([
+        api.getMasterConfig('departments'),
+        api.getMasterConfig('positions'),
+        api.getMasterConfig('job_types'),
+      ]);
+      setConfigDepts(d.items || []);
+      setConfigPositions(p.items || []);
+      setConfigJobTypes(j.items || []);
+    } catch {}
+  };
+
   const load = () => api.getEmployees(search).then((r: any) => setItems(r.items || r));
-  useEffect(() => { if (hrTab === "employees") load(); }, [search, hrTab]);
+  useEffect(() => { if (hrTab === "employees") { load(); loadConfigs(); } }, [search, hrTab]);
 
   // 前端筛选
   const filteredItems = useMemo(() => {
@@ -198,9 +215,15 @@ export default function Employees() {
   }, [items, filterDept, filterRole, filterPosition]);
 
   // 提取去重的部门/角色/岗位列表
-  const deptOptions = useMemo(() => [...new Set(items.map((e: any) => e.department).filter(Boolean))].sort(), [items]);
+  const deptOptions = useMemo(() => {
+    const fromEmployees = items.map((e: any) => e.department).filter(Boolean);
+    return [...new Set([...configDepts, ...fromEmployees])].sort();
+  }, [items, configDepts]);
   const roleOptions = useMemo(() => [...new Set(items.map((e: any) => e.role).filter(Boolean))].sort(), [items]);
-  const positionOptions = useMemo(() => [...new Set(items.map((e: any) => (e as any).position).filter(Boolean))].sort(), [items]);
+  const positionOptions = useMemo(() => {
+    const fromEmployees = items.map((e: any) => (e as any).position).filter(Boolean);
+    return [...new Set([...configPositions, ...fromEmployees])].sort();
+  }, [items, configPositions]);
 
   // 工号预览：position或姓名变化时调用API
   const fetchPreviewNo = useCallback(async (position: string, name: string) => {
@@ -225,6 +248,7 @@ export default function Employees() {
 
   const openNew = () => {
     setEditing(null);
+    loadConfigs();
     setSurname("");
     setGivenName("");
     setPreviewNo("");
@@ -233,6 +257,7 @@ export default function Employees() {
   };
   const openEdit = (item: Employee) => {
     setEditing(item);
+    loadConfigs();
     const fullName = item.name || "";
     setSurname(fullName ? fullName[0] : "");
     setGivenName(fullName.length > 1 ? fullName.slice(1) : "");
@@ -491,11 +516,16 @@ export default function Employees() {
           </div>
           {/* 部门 + 岗位 */}
           <div className="grid grid-cols-2 gap-3">
-            <div><label className="block text-sm font-medium text-gray-700 mb-1">部门</label><input className="w-full border rounded-lg p-2 text-sm" placeholder="所属部门" value={form.department} onChange={e => setForm({ ...form, department: e.target.value })} /></div>
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">部门</label>
+              <select className="w-full border rounded-lg p-2 text-sm" value={form.department} onChange={e => setForm({ ...form, department: e.target.value })}>
+                <option value="">选择部门</option>
+                {configDepts.map(d => <option key={d} value={d}>{d}</option>)}
+              </select>
+            </div>
             <div><label className="block text-sm font-medium text-gray-700 mb-1">岗位</label>
               <select className="w-full border rounded-lg p-2 text-sm" value={form.position} onChange={e => setForm({ ...form, position: e.target.value })}>
                 <option value="">选择岗位</option>
-                {POSITION_OPTIONS.map(p => <option key={p} value={p}>{p}</option>)}
+                {configPositions.map(p => <option key={p} value={p}>{p}</option>)}
               </select>
             </div>
           </div>
@@ -504,7 +534,7 @@ export default function Employees() {
             <label className="block text-sm font-medium text-gray-700 mb-1">工种</label>
             <select className="w-full border rounded-lg p-2 text-sm" value={form.job_type} onChange={e => setForm({ ...form, job_type: e.target.value })}>
               <option value="">选择工种</option>
-              {JOB_TYPE_OPTIONS.map(j => <option key={j} value={j}>{j}</option>)}
+              {configJobTypes.map(j => <option key={j} value={j}>{j}</option>)}
             </select>
           </div>
           {/* 工号（只读预览） */}

@@ -18,7 +18,6 @@ const navItems = [
   { path: '/hr-management', label: '人力资源管理', icon: Users },
   { path: '/locations', label: '库位', icon: Grid3x3 },
   { path: '/warehouses', label: '仓库', icon: Store },
-  { path: '/master-data', label: '基础数据', icon: Database },
   { path: '/backup', label: '数据备份', icon: DatabaseBackup },
   { path: '/labor', label: '劳保用品', icon: ShieldCheck },
 ];
