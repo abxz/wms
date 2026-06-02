@@ -17,7 +17,7 @@ export default function Inbound() {
   });
 
   const load = () => api.getInbound().then((r: any) => setItems(r.items || r));
-  const loadProducts = () => api.getProducts(1, "", 999).then((r: any) => setProducts(r.items || r));
+  const loadProducts = () => api.getProducts(1, "", 100).then((r: any) => setProducts(r.items || r));
   const loadSuppliers = () => api.getSuppliers().then((r: any) => setSuppliers(r.items || r));
 
   useEffect(() => { load(); }, []);

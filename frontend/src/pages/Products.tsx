@@ -254,22 +254,22 @@ export default function Products() {
 
       <Modal open={modal} onClose={() => setModal(false)} title={edit ? "编辑商品" : "新增商品"}>
         <div className="space-y-3">
-          <input className="w-full border rounded-lg p-2 text-sm" placeholder="商品名称 *" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+          <div><label className="block text-sm font-medium text-gray-700 mb-1">商品名称 *</label><input className="w-full border rounded-lg p-2 text-sm" placeholder="请输入商品名称" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
           <div className="grid grid-cols-2 gap-3">
-            <input className="w-full border rounded-lg p-2 text-sm" placeholder="SKU" value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} />
-            <input className="w-full border rounded-lg p-2 text-sm" placeholder="规格" value={form.spec} onChange={(e) => setForm({ ...form, spec: e.target.value })} />
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">SKU</label><input className="w-full border rounded-lg p-2 text-sm" placeholder="SKU编码" value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} /></div>
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">规格</label><input className="w-full border rounded-lg p-2 text-sm" placeholder="规格型号" value={form.spec} onChange={(e) => setForm({ ...form, spec: e.target.value })} /></div>
           </div>
           <div className="grid grid-cols-3 gap-3">
-            <input className="w-full border rounded-lg p-2 text-sm" type="number" placeholder="单价" value={form.price} onChange={(e) => setForm({ ...form, price: +e.target.value })} />
-            <input className="w-full border rounded-lg p-2 text-sm" placeholder="单位" value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} />
-            <input className="w-full border rounded-lg p-2 text-sm" type="number" placeholder="警戒库存" value={form.min_stock} onChange={(e) => setForm({ ...form, min_stock: +e.target.value })} />
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">单价</label><input className="w-full border rounded-lg p-2 text-sm" type="number" placeholder="0.00" value={form.price} onChange={(e) => setForm({ ...form, price: +e.target.value })} /></div>
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">单位</label><input className="w-full border rounded-lg p-2 text-sm" placeholder="个" value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} /></div>
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">警戒库存</label><input className="w-full border rounded-lg p-2 text-sm" type="number" placeholder="0" value={form.min_stock} onChange={(e) => setForm({ ...form, min_stock: +e.target.value })} /></div>
           </div>
-          <input className="w-full border rounded-lg p-2 text-sm" placeholder="分类" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} />
-          <input className="w-full border rounded-lg p-2 text-sm" placeholder="条码" value={form.barcode} onChange={(e) => setForm({ ...form, barcode: e.target.value })} />
-          <select className="w-full border rounded-lg p-2 text-sm" value={form.warehouse_id} onChange={(e) => setForm({ ...form, warehouse_id: e.target.value })}>
+          <div><label className="block text-sm font-medium text-gray-700 mb-1">分类</label><input className="w-full border rounded-lg p-2 text-sm" placeholder="商品分类" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} /></div>
+          <div><label className="block text-sm font-medium text-gray-700 mb-1">条码</label><input className="w-full border rounded-lg p-2 text-sm" placeholder="条形码" value={form.barcode} onChange={(e) => setForm({ ...form, barcode: e.target.value })} /></div>
+          <div><label className="block text-sm font-medium text-gray-700 mb-1">仓库</label><select className="w-full border rounded-lg p-2 text-sm" value={form.warehouse_id} onChange={(e) => setForm({ ...form, warehouse_id: e.target.value })}>
             <option value="">选择仓库</option>
             {warehouses.map((w) => (<option key={w.id} value={w.id}>{w.name}</option>))}
-          </select>
+          </select></div>
           <button onClick={save} className="w-full bg-blue-500 text-white py-2 rounded-lg font-medium">{edit ? "保存" : "创建"}</button>
         </div>
       </Modal>
