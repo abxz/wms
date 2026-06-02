@@ -16,6 +16,7 @@ try:
     with engine.connect() as _conn:
         _conn.execute(text("ALTER TABLE inbound ADD COLUMN IF NOT EXISTS purchase_type VARCHAR(32) DEFAULT ''"))
         _conn.execute(text("ALTER TABLE inbound ADD COLUMN IF NOT EXISTS contract_no VARCHAR(64) DEFAULT ''"))
+        _conn.execute(text("ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS contract_no VARCHAR(64) DEFAULT ''"))
         _conn.commit()
 except Exception:
     pass  # table may not exist yet on first run

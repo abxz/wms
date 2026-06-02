@@ -86,6 +86,7 @@ export interface Supplier {
   phone: string;
   address: string;
   remark: string;
+  contract_no?: string;
   active: boolean;
   created_at?: string;
 }

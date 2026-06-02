@@ -3,6 +3,7 @@ import { api } from "../services/api";
 import Modal from "../components/Modal";
 import ScanInput from "../components/ScanInput";
 import { Plus, Eye, CheckCircle, Trash2 } from "lucide-react";
+import ImportModal from "../components/ImportModal";
 import { InboundOrder, Product, Supplier } from "../types";
 
 export default function Inbound() {
@@ -11,6 +12,8 @@ export default function Inbound() {
   const [products, setProducts] = useState<Product[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const [importModal, setImportModal] = useState(false);
 
   /* ─── 新建弹窗 ─── */
   const [modal, setModal] = useState(false);
@@ -121,6 +124,12 @@ export default function Inbound() {
         <div className="flex items-center gap-3">
           <ScanInput onScan={handleScan} placeholder="扫描商品码..." />
           <button
+            onClick={() => setImportModal(true)}
+            className="border px-3 py-2.5 rounded-lg text-base font-medium flex items-center gap-1 text-green-600 hover:bg-green-50 whitespace-nowrap"
+          >
+            导入
+          </button>
+          <button
             onClick={() => setModal(true)}
             className="bg-blue-500 text-white px-4 py-2.5 rounded-lg text-base font-medium flex items-center gap-1 min-w-[110px] whitespace-nowrap"
           >
@@ -203,7 +212,7 @@ export default function Inbound() {
             >
               <option value="">选择供应商（可选）</option>
               {suppliers.map((s: any) => (
-                <option key={s.id} value={s.id}>{s.name}</option>
+                <option key={s.id} value={s.id}>{s.name}{s.contract_no ? ` (合同编号: ${s.contract_no})` : ""}</option>
               ))}
             </select>
           </div>
@@ -223,12 +232,12 @@ export default function Inbound() {
           </div>
 
           {/* 采购编号 */}
-          {form.purchase_type === "合同采购" && (
+          {form.purchase_type && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">采购编号</label>
               <input
                 className="w-full border rounded-lg p-2 text-sm"
-                placeholder="请输入合同采购编号"
+                placeholder={form.purchase_type === "零星采购" ? "请输入零星采购编号" : "请输入合同编号"}
                 value={form.contract_no}
                 onChange={(e) => setForm({ ...form, contract_no: e.target.value })}
               />
@@ -386,6 +395,16 @@ export default function Inbound() {
           <button onClick={() => setErrorMsg(null)} className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm">确定</button>
         </div>
       </Modal>
+
+      {/* ─── 导入弹窗 ─── */}
+      <ImportModal
+        open={importModal}
+        onClose={() => setImportModal(false)}
+        templateType="orders"
+        onImport={(file) => api.importOrders(file)}
+        onSuccess={() => load()}
+        moduleName="入库单"
+      />
     </div>
   );
 }

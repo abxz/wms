@@ -185,6 +185,11 @@ export const api = {
   importMainData: (file: File) => authUpload(`${API_BASE}/api/import/main-data`, file),
   importEmployees: (file: File) => authUpload(`${API_BASE}/api/import/employees`, file),
   importOrders: (file: File) => authUpload(`${API_BASE}/api/import/orders`, file),
+  // 别名：供页面直接调用
+  uploadEmployees: (file: File) => authUpload(`${API_BASE}/api/import/employees`, file),
+  downloadEmployeeTemplate: () => (api as any).downloadTemplate('employees'),
+  uploadOrders: (file: File) => authUpload(`${API_BASE}/api/import/orders`, file),
+  downloadOrderTemplate: () => (api as any).downloadTemplate('orders'),
 
   // ─── 面板 ───
   getDashboard: () => req("/dashboard/summary"),

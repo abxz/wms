@@ -48,6 +48,7 @@ class Supplier(Base):
     phone = Column(String(32), default="")
     address = Column(Text, default="")
     remark = Column(Text, default="")
+    contract_no = Column(String(64), default="")
     active = Column(Boolean, default=True)
     created_at = Column(String(32), default="")
     updated_at = Column(String(32), default="")

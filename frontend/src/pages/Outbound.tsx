@@ -35,7 +35,7 @@ export default function Outbound() {
   /* ─── 加载函数 ─── */
   const load = () => api.getOutbound().then((r: any) => setItems(r.items || r));
   const loadProducts = () =>
-    api.getProducts(1, "", 999).then((r: any) => {
+    api.getProducts(1, "", 100).then((r: any) => {
       const list: Product[] = r.items || r;
       setProducts(list);
       const cache: Record<string, Product> = {};

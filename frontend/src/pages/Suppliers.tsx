@@ -9,7 +9,7 @@ export default function Suppliers() {
   const [items, setItems] = useState<Supplier[]>([]);
   const [modal, setModal] = useState(false);
   const [editing, setEditing] = useState<Supplier | null>(null);
-  const [form, setForm] = useState({ name: "", contact: "", phone: "", address: "", remark: "" });
+  const [form, setForm] = useState({ name: "", contact: "", phone: "", address: "", remark: "", contract_no: "" });
   const [confirmModal, setConfirmModal] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [importModal, setImportModal] = useState(false);
@@ -19,7 +19,7 @@ export default function Suppliers() {
 
   const openNew = () => {
     setEditing(null);
-    setForm({ name: "", contact: "", phone: "", address: "", remark: "" });
+    setForm({ name: "", contact: "", phone: "", address: "", remark: "", contract_no: "" });
     setModal(true);
   };
   const openEdit = (item: Supplier) => {
@@ -30,6 +30,7 @@ export default function Suppliers() {
       phone: item.phone || "",
       address: item.address || "",
       remark: item.remark || "",
+      contract_no: (item as any).contract_no || "",
     });
     setModal(true);
   };
@@ -39,7 +40,7 @@ export default function Suppliers() {
       else await api.createSupplier(form);
       setModal(false);
       setEditing(null);
-      setForm({ name: "", contact: "", phone: "", address: "", remark: "" });
+      setForm({ name: "", contact: "", phone: "", address: "", remark: "", contract_no: "" });
       load();
     } catch (e: any) {
       alert(e.message || "保存失败");
@@ -73,6 +74,7 @@ export default function Suppliers() {
             <thead className="bg-gray-50 border-b text-gray-600">
               <tr>
                 <th className="px-3 py-2.5 text-left font-semibold">名称</th>
+                <th className="px-3 py-2.5 text-left font-semibold">合同编号</th>
                 <th className="px-3 py-2.5 text-left font-semibold">联系人</th>
                 <th className="px-3 py-2.5 text-left font-semibold">电话</th>
                 <th className="px-3 py-2.5 text-left font-semibold">地址</th>
@@ -84,6 +86,7 @@ export default function Suppliers() {
               {items.map((item: any) => (
                 <tr key={item.id} className="border-b hover:bg-gray-50 transition-colors">
                   <td className="px-3 py-2.5 font-medium">{item.name}</td>
+                  <td className="px-3 py-2.5 text-gray-500">{(item as any).contract_no || "-"}</td>
                   <td className="px-3 py-2.5 text-gray-500">{item.contact || "-"}</td>
                   <td className="px-3 py-2.5 text-gray-500">{item.phone || "-"}</td>
                   <td className="px-3 py-2.5 text-gray-500">{item.address || "-"}</td>
@@ -97,7 +100,7 @@ export default function Suppliers() {
                 </tr>
               ))}
               {items.length === 0 && (
-                <tr><td colSpan={6} className="text-center text-gray-400 py-8">暂无供应商</td></tr>
+                <tr><td colSpan={7} className="text-center text-gray-400 py-8">暂无供应商</td></tr>
               )}
             </tbody>
           </table>
@@ -106,6 +109,7 @@ export default function Suppliers() {
       <Modal open={modal} onClose={() => setModal(false)} title={editing ? "编辑供应商" : "新增供应商"}>
         <div className="space-y-3">
           <div><label className="block text-sm font-medium text-gray-700 mb-1">名称 *</label><input className="w-full border rounded-lg p-2 text-sm" placeholder="请输入供应商名称" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
+          <div><label className="block text-sm font-medium text-gray-700 mb-1">合同编号</label><input className="w-full border rounded-lg p-2 text-sm" placeholder="请输入合同编号" value={form.contract_no} onChange={e => setForm({ ...form, contract_no: e.target.value })} /></div>
           <div className="grid grid-cols-2 gap-3">
             <div><label className="block text-sm font-medium text-gray-700 mb-1">联系人</label><input className="w-full border rounded-lg p-2 text-sm" placeholder="联系人姓名" value={form.contact} onChange={e => setForm({ ...form, contact: e.target.value })} /></div>
             <div><label className="block text-sm font-medium text-gray-700 mb-1">电话</label><input className="w-full border rounded-lg p-2 text-sm" placeholder="联系电话" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} /></div>

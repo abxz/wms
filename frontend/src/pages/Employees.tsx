@@ -1,7 +1,8 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { api } from "../services/api";
 import Modal from "../components/Modal";
-import { Plus, Edit2, Trash2, ShoppingCart, Search, Download, QrCode, CheckSquare } from "lucide-react";
+import { Plus, Edit2, Trash2, ShoppingCart, Search, Download, QrCode, CheckSquare, Upload } from "lucide-react";
+import ImportModal from "../components/ImportModal";
 import { Employee } from '../types';
 
 const ROLE_LABELS: Record<string, string> = {
@@ -25,6 +26,9 @@ const POSITION_OPTIONS = [
 export default function Employees() {
   const [items, setItems] = useState<Employee[]>([]);
   const [search, setSearch] = useState("");
+  const [filterDept, setFilterDept] = useState("");
+  const [filterRole, setFilterRole] = useState("");
+  const [filterPosition, setFilterPosition] = useState("");
   const [modal, setModal] = useState(false);
   const [editing, setEditing] = useState<Employee | null>(null);
   const [claimModal, setClaimModal] = useState(false);
@@ -41,9 +45,25 @@ export default function Employees() {
   const [errorMessage, setErrorMessage] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkConfirmModal, setBulkConfirmModal] = useState(false);
+  const [importModal, setImportModal] = useState(false);
 
   const load = () => api.getEmployees(search).then((r: any) => setItems(r.items || r));
   useEffect(() => { load(); }, [search]);
+
+  // 前端筛选
+  const filteredItems = useMemo(() => {
+    return items.filter((item: any) => {
+      if (filterDept && item.department !== filterDept) return false;
+      if (filterRole && item.role !== filterRole) return false;
+      if (filterPosition && (item as any).position !== filterPosition) return false;
+      return true;
+    });
+  }, [items, filterDept, filterRole, filterPosition]);
+
+  // 提取去重的部门/角色/岗位列表
+  const deptOptions = useMemo(() => [...new Set(items.map((e: any) => e.department).filter(Boolean))].sort(), [items]);
+  const roleOptions = useMemo(() => [...new Set(items.map((e: any) => e.role).filter(Boolean))].sort(), [items]);
+  const positionOptions = useMemo(() => [...new Set(items.map((e: any) => (e as any).position).filter(Boolean))].sort(), [items]);
 
   // 工号预览：position或姓名变化时调用API
   const fetchPreviewNo = useCallback(async (position: string, name: string) => {
@@ -131,10 +151,10 @@ export default function Employees() {
     });
   };
   const toggleSelectAll = () => {
-    if (selected.size === items.length) {
+    if (selected.size === filteredItems.length) {
       setSelected(new Set());
     } else {
-      setSelected(new Set(items.map((i: any) => i.id)));
+      setSelected(new Set(filteredItems.map((i: any) => i.id)));
     }
   };
   const handleBulkDelete = async () => {
@@ -163,7 +183,7 @@ export default function Employees() {
 
   const openClaim = () => {
     api.getEmployees().then((r: any) => setClaimEmployees(r.items || r));
-    api.getProducts(1, "", 999).then((r: any) => setClaimProducts(r.items || r));
+    api.getProducts(1, "", 100).then((r: any) => setClaimProducts(r.items || r));
     setClaim({ employee_id: "", product_id: "", quantity: 1 });
     setClaimModal(true);
   };
@@ -187,19 +207,45 @@ export default function Employees() {
             </span>
           )}
           <button onClick={() => api.exportEmployees()} className="border px-3 py-2 rounded-lg text-sm flex items-center gap-1 text-gray-600"><Download size={16} /> 导出</button>
+          <button onClick={() => setImportModal(true)} className="border px-3 py-2 rounded-lg text-sm flex items-center gap-1 text-green-600 hover:bg-green-50"><Upload size={16} /> 导入</button>
           <button onClick={openClaim} className="bg-green-500 text-white px-3 py-2 rounded-lg text-sm flex items-center gap-1"><ShoppingCart size={16} /> 领用</button>
           <button onClick={openNew} className="bg-blue-500 text-white px-3 py-2 rounded-lg text-sm flex items-center gap-1"><Plus size={16} /> 新增</button>
         </div>
       </div>
 
-      <div className="relative mb-3">
-        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-        <input
-          className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm"
-          placeholder="搜索姓名/工号/部门/角色..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+      <div className="mb-3 space-y-2">
+        <div className="relative">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm"
+            placeholder="搜索姓名/工号/部门/角色..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <div className="flex gap-2">
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-0.5">部门</label>
+            <select className="border rounded-lg px-2 py-1.5 text-sm" value={filterDept} onChange={e => setFilterDept(e.target.value)}>
+              <option value="">全部部门</option>
+              {deptOptions.map(d => <option key={d} value={d}>{d}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-0.5">角色</label>
+            <select className="border rounded-lg px-2 py-1.5 text-sm" value={filterRole} onChange={e => setFilterRole(e.target.value)}>
+              <option value="">全部角色</option>
+              {roleOptions.map(r => <option key={r} value={r}>{ROLE_LABELS[r] || r}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-0.5">岗位</label>
+            <select className="border rounded-lg px-2 py-1.5 text-sm" value={filterPosition} onChange={e => setFilterPosition(e.target.value)}>
+              <option value="">全部岗位</option>
+              {positionOptions.map(p => <option key={p} value={p}>{p}</option>)}
+            </select>
+          </div>
+        </div>
       </div>
 
       <div className="bg-white rounded-xl border overflow-hidden">
@@ -210,15 +256,17 @@ export default function Employees() {
                 <th className="px-3 py-2.5 text-left font-semibold">姓名/工号</th>
                 <th className="px-3 py-2.5 text-left font-semibold">角色</th>
                 <th className="px-3 py-2.5 text-left font-semibold">部门</th>
-                <th className="px-3 py-2.5 text-left font-semibold">月度额度</th>
+                <th className="px-3 py-2.5 text-left font-semibold">岗位</th>
+                <th className="px-3 py-2.5 text-left font-semibold">月额度</th>
+                <th className="px-3 py-2.5 text-left font-semibold">已用</th>
                 <th className="px-3 py-2.5 text-center font-semibold w-12">
-                  <input type="checkbox" className="rounded" checked={items.length > 0 && selected.size === items.length} onChange={toggleSelectAll} />
+                  <input type="checkbox" className="rounded" checked={filteredItems.length > 0 && selected.size === filteredItems.length} onChange={toggleSelectAll} />
                 </th>
                 <th className="px-3 py-2.5 text-center font-semibold">操作</th>
               </tr>
             </thead>
             <tbody>
-              {items.map((item: any) => (
+              {filteredItems.map((item: any) => (
                 <tr key={item.id} className="border-b hover:bg-gray-50 transition-colors">
                   <td className="px-3 py-2.5">
                     <span className="font-medium">{item.name}</span>
@@ -232,7 +280,9 @@ export default function Employees() {
                     )}
                   </td>
                   <td className="px-3 py-2.5 text-gray-500">{item.department || "未分配"}</td>
-                  <td className="px-3 py-2.5 text-gray-500">不限</td>
+                  <td className="px-3 py-2.5 text-gray-500">{(item as any).position || "-"}</td>
+                  <td className="px-3 py-2.5 text-gray-500">{item.monthly_quota && item.monthly_quota > 0 ? `¥${item.monthly_quota}` : "—"}</td>
+                  <td className="px-3 py-2.5 text-gray-500">{item.monthly_used && item.monthly_used > 0 ? `¥${item.monthly_used}` : "—"}</td>
                   <td className="px-3 py-2.5 text-center">
                     <input type="checkbox" className="rounded" checked={selected.has(item.id)} onChange={() => toggleSelect(item.id)} />
                   </td>
@@ -246,7 +296,7 @@ export default function Employees() {
                 </tr>
               ))}
               {items.length === 0 && (
-                <tr><td colSpan={6} className="text-center text-gray-400 py-8">暂无员工</td></tr>
+                <tr><td colSpan={8} className="text-center text-gray-400 py-8">暂无员工</td></tr>
               )}
             </tbody>
           </table>
@@ -372,6 +422,16 @@ export default function Employees() {
           <button onClick={() => setErrorModal(false)} className="w-full border rounded-lg py-2 text-sm">确定</button>
         </div>
       </Modal>
+
+      {/* 导入弹窗 */}
+      <ImportModal
+        open={importModal}
+        onClose={() => setImportModal(false)}
+        templateType="employees"
+        onImport={(file) => api.uploadEmployees(file)}
+        onSuccess={() => load()}
+        moduleName="员工"
+      />
     </div>
   );
 }
