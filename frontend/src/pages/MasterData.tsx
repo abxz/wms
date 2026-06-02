@@ -12,7 +12,7 @@ const TABS: { key: TabKey; label: string }[] = [
 ];
 
 // ─── 商品表单 ───
-function ProductForm({ form, setForm }: { form: any; setForm: (f: any) => void }) {
+function ProductForm({ form, setForm, suppliers }: { form: any; setForm: (f: any) => void; suppliers: any[] }) {
   return (
     <div className="space-y-3">
       <div><label className="block text-sm font-medium text-gray-700 mb-1">商品名称 *</label><input className="w-full border rounded-lg p-2 text-sm" placeholder="请输入商品名称" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
@@ -26,6 +26,10 @@ function ProductForm({ form, setForm }: { form: any; setForm: (f: any) => void }
         <div><label className="block text-sm font-medium text-gray-700 mb-1">分类</label><input className="w-full border rounded-lg p-2 text-sm" placeholder="商品分类" value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} /></div>
       </div>
       <div><label className="block text-sm font-medium text-gray-700 mb-1">条码</label><input className="w-full border rounded-lg p-2 text-sm" placeholder="条形码" value={form.barcode} onChange={e => setForm({ ...form, barcode: e.target.value })} /></div>
+      <div><label className="block text-sm font-medium text-gray-700 mb-1">供应商</label><select className="w-full border rounded-lg p-2 text-sm" value={form.supplier_id} onChange={e => setForm({ ...form, supplier_id: e.target.value })}>
+        <option value="">选择供应商（可选）</option>
+        {suppliers.map((s: any) => (<option key={s.id} value={s.id}>{s.name}</option>))}
+      </select></div>
     </div>
   );
 }
@@ -66,9 +70,10 @@ export default function MasterData() {
   const [edit, setEdit] = useState<any>(null);
   const [deleteTarget, setDeleteTarget] = useState<any>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [masterSuppliers, setMasterSuppliers] = useState<any[]>([]);
 
   const emptyForm = {
-    products: { name: "", sku: "", spec: "", price: 0, unit: "个", category: "", barcode: "" },
+    products: { name: "", sku: "", spec: "", price: 0, unit: "个", category: "", barcode: "", supplier_id: "" },
     suppliers: { name: "", contact: "", phone: "", address: "", remark: "" },
     employees: { name: "", employee_no: "", department: "" },
   }[tab];
@@ -80,6 +85,10 @@ export default function MasterData() {
     else if (tab === "suppliers") api.masterSuppliers(search).then((r: any) => setItems(r.items || r));
     else api.masterEmployees(search).then((r: any) => setItems(r.items || r));
   }, [tab, search]);
+
+  useEffect(() => {
+    api.masterSuppliers("").then((r: any) => setMasterSuppliers(r.items || r || [])).catch(() => {});
+  }, []);
 
   useEffect(() => { load(); }, [load]);
 
@@ -147,12 +156,13 @@ export default function MasterData() {
     ],
   };
 
-  const Forms: Record<TabKey, React.FC<{ form: any; setForm: (f: any) => void }>> = {
+  const Forms: Record<TabKey, React.FC<any>> = {
     products: ProductForm,
     suppliers: SupplierForm,
     employees: EmployeeForm,
   };
   const FormComponent = Forms[tab];
+  const formProps = tab === "products" ? { form, setForm, suppliers: masterSuppliers } : { form, setForm };
 
   return (
     <div>
@@ -216,7 +226,7 @@ export default function MasterData() {
 
       {/* 编辑/新增弹窗 */}
       <Modal open={modal} onClose={() => setModal(false)} title={edit ? `编辑${TABS.find(t => t.key === tab)?.label}` : `新增${TABS.find(t => t.key === tab)?.label}`}>
-        <FormComponent form={form} setForm={setForm} />
+        <FormComponent {...formProps} />
         <button onClick={save} className="w-full bg-blue-500 text-white py-2 rounded-lg font-medium mt-4">
           {edit ? "保存" : "创建"}
         </button>

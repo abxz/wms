@@ -110,6 +110,13 @@ export default function Inbound() {
               </div>
             );
           })}
+          {/* 合计 */}
+          <div className="bg-gray-50 rounded-lg p-3 flex items-center justify-between">
+            <span className="text-sm text-gray-600">合计</span>
+            <span className="text-lg font-bold text-blue-600">
+              ¥{form.items.reduce((sum: number, it: any) => sum + (it.quantity || 0) * (it.price || 0), 0).toFixed(2)}
+            </span>
+          </div>
           <button onClick={createAsync} className="w-full bg-blue-500 text-white py-2 rounded-lg font-medium">创建入库单</button>
         </div>
       </Modal>

@@ -17,6 +17,7 @@ export default function Products() {
   const [search, setSearch] = useState("");
   const [warehouseFilter, setWarehouseFilter] = useState("");
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
+  const [suppliers, setSuppliers] = useState<any[]>([]);
   const [modal, setModal] = useState(false);
   const [edit, setEdit] = useState<any>(null);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
@@ -25,7 +26,7 @@ export default function Products() {
   const [inboundModal, setInboundModal] = useState<any>(null);
   const [outboundModal, setOutboundModal] = useState<any>(null);
   const [stockModal, setStockModal] = useState<any>(null);
-  const [form, setForm] = useState({ name: "", sku: "", price: 0, category: "", barcode: "", unit: "个", warehouse_id: "", location_id: "", min_stock: 0, spec: "" });
+  const [form, setForm] = useState({ name: "", sku: "", price: 0, category: "", barcode: "", unit: "个", warehouse_id: "", location_id: "", min_stock: 0, spec: "", supplier_id: "" });
 
   const load = useCallback(() => {
     api.getProducts(page, search).then((r: any) => {
@@ -42,6 +43,7 @@ export default function Products() {
 
   useEffect(() => {
     api.getWarehouses().then((r: any) => setWarehouses(r || [])).catch(() => {});
+    api.getSuppliers().then((r: any) => setSuppliers(r.items || r || [])).catch(() => {});
   }, []);
 
   const save = async () => {
@@ -49,7 +51,7 @@ export default function Products() {
     else await api.createProduct(form);
     setModal(false);
     setEdit(null);
-    setForm({ name: "", sku: "", price: 0, category: "", barcode: "", unit: "个", warehouse_id: "", location_id: "", min_stock: 0, spec: "" });
+    setForm({ name: "", sku: "", price: 0, category: "", barcode: "", unit: "个", warehouse_id: "", location_id: "", min_stock: 0, spec: "", supplier_id: "" });
     load();
   };
 
@@ -67,13 +69,14 @@ export default function Products() {
       name: item.name, sku: item.sku, price: item.price, category: item.category || "",
       barcode: item.barcode || "", unit: item.unit || "个", warehouse_id: item.warehouse_id || "",
       location_id: item.location_id || "", min_stock: item.min_stock || 0, spec: item.spec || "",
+      supplier_id: item.supplier_id || "",
     });
     setModal(true);
   };
 
   const openNew = () => {
     setEdit(null);
-    setForm({ name: "", sku: "", price: 0, category: "", barcode: "", unit: "个", warehouse_id: "", location_id: "", min_stock: 0, spec: "" });
+    setForm({ name: "", sku: "", price: 0, category: "", barcode: "", unit: "个", warehouse_id: "", location_id: "", min_stock: 0, spec: "", supplier_id: "" });
     setModal(true);
   };
 
@@ -266,6 +269,10 @@ export default function Products() {
           </div>
           <div><label className="block text-sm font-medium text-gray-700 mb-1">分类</label><input className="w-full border rounded-lg p-2 text-sm" placeholder="商品分类" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} /></div>
           <div><label className="block text-sm font-medium text-gray-700 mb-1">条码</label><input className="w-full border rounded-lg p-2 text-sm" placeholder="条形码" value={form.barcode} onChange={(e) => setForm({ ...form, barcode: e.target.value })} /></div>
+          <div><label className="block text-sm font-medium text-gray-700 mb-1">供应商</label><select className="w-full border rounded-lg p-2 text-sm" value={form.supplier_id} onChange={(e) => setForm({ ...form, supplier_id: e.target.value })}>
+            <option value="">选择供应商（可选）</option>
+            {suppliers.map((s: any) => (<option key={s.id} value={s.id}>{s.name}</option>))}
+          </select></div>
           <div><label className="block text-sm font-medium text-gray-700 mb-1">仓库</label><select className="w-full border rounded-lg p-2 text-sm" value={form.warehouse_id} onChange={(e) => setForm({ ...form, warehouse_id: e.target.value })}>
             <option value="">选择仓库</option>
             {warehouses.map((w) => (<option key={w.id} value={w.id}>{w.name}</option>))}
