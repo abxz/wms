@@ -19,6 +19,11 @@ def list_supplies(page: int = Query(1, ge=1), size: int = Query(20, ge=1, le=100
 def list_all_supplies():
     return svc.list_all_supplies()
 
+@router.get("/supplies/low-stock")
+def get_low_stock():
+    """获取库存低于阈值的用品"""
+    return svc.get_low_stock_supplies()
+
 @router.get("/supplies/{sid}")
 def get_supply(sid: str):
     s = svc.get_supply(sid)
@@ -114,8 +119,3 @@ def distribute(body: dict):
 def get_pending(position: str = Query("", description="按岗位过滤")):
     """获取待领取列表（过期/即将到期）"""
     return svc.get_employee_pending(position)
-
-@router.get("/supplies/low-stock")
-def get_low_stock():
-    """获取库存低于阈值的用品"""
-    return svc.get_low_stock_supplies()
