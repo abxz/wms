@@ -7,6 +7,33 @@ from uuid import uuid4
 FILE = "products"
 SEARCH_FIELDS = ["name", "sku", "barcode", "category", "spec", "invoice_number"]
 
+# SKU 分类前缀映射
+CATEGORY_PREFIX = {
+    "水泥": "SN",
+    "骨料": "GL",
+    "钢材": "GJ",
+    "砂石": "SS",
+    "建材": "JC",
+    "外加剂": "WJJ",
+}
+
+
+def generate_sku(category: str) -> str:
+    """根据分类生成下一个 SKU，格式：前缀-001"""
+    prefix = CATEGORY_PREFIX.get(category, "QT")
+    # 查找该分类下最大的序号
+    max_seq = 0
+    for p in all_(FILE):
+        sku = p.get("sku", "")
+        if sku.startswith(prefix + "-"):
+            try:
+                seq = int(sku.split("-")[1])
+                if seq > max_seq:
+                    max_seq = seq
+            except (ValueError, IndexError):
+                pass
+    return f"{prefix}-{max_seq + 1:03d}"
+
 
 def _enrich_product(p: dict) -> dict:
     """聚合库存/仓库/库位/状态数据"""
@@ -82,6 +109,8 @@ def create_product(data: dict) -> dict:
     p.id = generate_id()
     if not p.qr_uuid:
         p.qr_uuid = uuid4().hex[:12]
+    if not p.sku:
+        p.sku = generate_sku(p.category or "")
     d = p.model_dump()
     d.pop("created_at", None)
     d.pop("updated_at", None)

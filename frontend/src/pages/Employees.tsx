@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../services/api";
 import Modal from "../components/Modal";
-import { Plus, Edit2, Trash2, ShoppingCart, Search, Download } from "lucide-react";
+import { Plus, Edit2, Trash2, ShoppingCart, Search, Download, QrCode } from "lucide-react";
 import { Employee } from '../types';
 
 const ROLE_LABELS: Record<string, string> = {
@@ -74,6 +74,21 @@ export default function Employees() {
     load();
   };
 
+  const downloadQR = async (item: any) => {
+    try {
+      const blob = await api.getEmployeeQR(item.id);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${item.name}.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e: any) {
+      setErrorMessage(e?.message || "二维码下载失败");
+      setErrorModal(true);
+    }
+  };
+
   const openClaim = () => {
     api.getEmployees().then((r: any) => setClaimEmployees(r.items || r));
     api.getProducts(1, "", 999).then((r: any) => setClaimProducts(r.items || r));
@@ -124,6 +139,7 @@ export default function Employees() {
               <p className="text-xs text-gray-400">{item.department || "未分配"} · 额度: ¥{item.monthly_used}/{item.monthly_quota}</p>
             </div>
             <div className="flex gap-1">
+              <button onClick={() => downloadQR(item)} className="p-1.5 text-gray-400 hover:text-green-500" title="二维码"><QrCode size={15} /></button>
               <button onClick={() => openEdit(item)} className="p-1.5 text-gray-400 hover:text-blue-500"><Edit2 size={15} /></button>
               <button onClick={() => confirmDelete(item.id)} className="p-1.5 text-gray-400 hover:text-red-500"><Trash2 size={15} /></button>
             </div>

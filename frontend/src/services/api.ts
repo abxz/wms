@@ -24,6 +24,7 @@ export const api = {
   // ─── 商品 ───
   getProducts: (p = 1, s = "", pg = 20, warehouseId = "") => req(`/products?page=${p}&size=${pg}&search=${encodeURIComponent(s)}${warehouseId ? `&warehouse_id=${warehouseId}` : ""}`),
   getProduct: (id: string) => req(`/products/${id}`),
+  getNextSku: (category: string) => req(`/products/next-sku?category=${encodeURIComponent(category)}`),
   getProductInvoice: (id: string) => req(`/products/${id}/invoice`),
   createProduct: (d: any) => req("/products", { method: "POST", body: JSON.stringify(d) }),
   updateProduct: (id: string, d: any) => req(`/products/${id}`, { method: "PUT", body: JSON.stringify(d) }),
@@ -48,6 +49,14 @@ export const api = {
   updateEmployee: (id: string, d: any) => req(`/employees/${id}`, { method: "PUT", body: JSON.stringify(d) }),
   deleteEmployee: (id: string) => req(`/employees/${id}`, { method: "DELETE" }),
   claimItem: (d: any) => req("/employees/claim", { method: "POST", body: JSON.stringify(d) }),
+  getEmployeeQR: async (eid: string) => {
+    const token = localStorage.getItem("wms_token") || localStorage.getItem("auth_token");
+    const res = await fetch(`${API_BASE}/api/employees/${eid}/qrcode`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!res.ok) throw new Error("二维码生成失败");
+    return res.blob();
+  },
 
   // ─── 库存 ───
   getInventory: () => req("/inventory"),

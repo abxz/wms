@@ -28,6 +28,16 @@ export default function Products() {
   const [stockModal, setStockModal] = useState<any>(null);
   const [form, setForm] = useState({ name: "", sku: "", price: 0, category: "", barcode: "", unit: "个", warehouse_id: "", location_id: "", min_stock: 0, spec: "", supplier_id: "" });
 
+  // 分类变化时自动获取下一个 SKU
+  const handleCategoryChange = (cat: string) => {
+    setForm({ ...form, category: cat, sku: "" });
+    if (cat && !edit) {
+      api.getNextSku(cat).then((r: any) => {
+        setForm(prev => ({ ...prev, sku: r.sku || "" }));
+      }).catch(() => {});
+    }
+  };
+
   const load = useCallback(() => {
     api.getProducts(page, search).then((r: any) => {
       let filtered = r.items || [];
@@ -267,7 +277,20 @@ export default function Products() {
             <div><label className="block text-sm font-medium text-gray-700 mb-1">单位</label><input className="w-full border rounded-lg p-2 text-sm" placeholder="个" value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} /></div>
             <div><label className="block text-sm font-medium text-gray-700 mb-1">警戒库存</label><input className="w-full border rounded-lg p-2 text-sm" type="number" placeholder="0" value={form.min_stock} onChange={(e) => setForm({ ...form, min_stock: +e.target.value })} /></div>
           </div>
-          <div><label className="block text-sm font-medium text-gray-700 mb-1">分类</label><input className="w-full border rounded-lg p-2 text-sm" placeholder="商品分类" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} /></div>
+          <div className="grid grid-cols-2 gap-3">
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">分类</label>
+              <select className="w-full border rounded-lg p-2 text-sm" value={form.category} onChange={(e) => handleCategoryChange(e.target.value)}>
+                <option value="">选择分类</option>
+                <option value="水泥">水泥</option>
+                <option value="骨料">骨料</option>
+                <option value="钢材">钢材</option>
+                <option value="砂石">砂石</option>
+                <option value="建材">建材</option>
+                <option value="外加剂">外加剂</option>
+              </select>
+            </div>
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">SKU（自动生成）</label><input className="w-full border rounded-lg p-2 text-sm bg-gray-50" placeholder="选择分类后自动生成" value={form.sku} readOnly /></div>
+          </div>
           <div><label className="block text-sm font-medium text-gray-700 mb-1">条码</label><input className="w-full border rounded-lg p-2 text-sm" placeholder="条形码" value={form.barcode} onChange={(e) => setForm({ ...form, barcode: e.target.value })} /></div>
           <div><label className="block text-sm font-medium text-gray-700 mb-1">供应商</label><select className="w-full border rounded-lg p-2 text-sm" value={form.supplier_id} onChange={(e) => setForm({ ...form, supplier_id: e.target.value })}>
             <option value="">选择供应商（可选）</option>

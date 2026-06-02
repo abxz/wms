@@ -80,3 +80,42 @@ def route_claim(body: dict):
         "remark": body.get("remark", ""),
     })
     return record
+
+
+@router.get("/{eid}/qrcode")
+def route_qrcode(eid: str):
+    """生成员工二维码（内容：姓名+编号+部门），返回 PNG 图片"""
+    emp = svc.get_employee(eid)
+    if not emp:
+        raise HTTPException(404, "员工不存在")
+
+    name = emp.get("name", "")
+    emp_no = emp.get("employee_no", "")
+    dept = emp.get("department", "")
+
+    # 二维码内容：姓名 | 编号 | 部门
+    qr_text = f"{name}|{emp_no}|{dept}"
+
+    import io
+    import qrcode
+    from fastapi.responses import Response
+    from urllib.parse import quote
+
+    qr = qrcode.QRCode(version=None, error_correction=qrcode.constants.ERROR_CORRECT_M,
+                        box_size=10, border=4)
+    qr.add_data(qr_text)
+    qr.make(fit=True)
+    img = qr.make_image()
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+
+    # 文件名用员工姓名
+    safe_name = quote(name, safe='')[:50] if name else emp_no
+    return Response(
+        content=buf.getvalue(),
+        media_type="image/png",
+        headers={
+            "Content-Disposition": f'attachment; filename*=UTF-8\'\'{safe_name}.png',
+            "Access-Control-Expose-Headers": "Content-Disposition",
+        },
+    )
