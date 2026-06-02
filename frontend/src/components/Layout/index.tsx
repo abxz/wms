@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, Package, ArrowDownToLine, ArrowUpFromLine,
-  Warehouse, Users, FileText, UserCircle, MapPin, Menu, X, QrCode, LogOut, DatabaseBackup,
+  LayoutDashboard, Package, PackagePlus, Truck,
+  Boxes, Building2, Receipt, HardHat, Grid3x3, Store, Database, Menu, X, QrCode, LogOut, DatabaseBackup,
   ShieldCheck, Bell
 } from 'lucide-react';
 import { api } from '../../services/api';
@@ -10,15 +10,15 @@ import { api } from '../../services/api';
 const navItems = [
   { path: '/', label: '面板', icon: LayoutDashboard },
   { path: '/products', label: '商品', icon: Package },
-  { path: '/inbound', label: '入库', icon: ArrowDownToLine },
-  { path: '/outbound', label: '出库', icon: ArrowUpFromLine },
-  { path: '/inventory', label: '库存', icon: Warehouse },
-  { path: '/suppliers', label: '供应商', icon: Users },
-  { path: '/invoices', label: '发票', icon: FileText },
-  { path: '/employees', label: '员工', icon: UserCircle },
-  { path: '/locations', label: '库位', icon: MapPin },
-  { path: '/warehouses', label: '仓库', icon: Warehouse },
-  { path: '/master-data', label: '基础数据', icon: FileText },
+  { path: '/inbound', label: '入库', icon: PackagePlus },
+  { path: '/outbound', label: '出库', icon: Truck },
+  { path: '/inventory', label: '库存', icon: Boxes },
+  { path: '/suppliers', label: '供应商', icon: Building2 },
+  { path: '/invoices', label: '发票', icon: Receipt },
+  { path: '/employees', label: '员工', icon: HardHat },
+  { path: '/locations', label: '库位', icon: Grid3x3 },
+  { path: '/warehouses', label: '仓库', icon: Store },
+  { path: '/master-data', label: '基础数据', icon: Database },
   { path: '/backup', label: '数据备份', icon: DatabaseBackup },
   { path: '/labor', label: '劳保用品', icon: ShieldCheck },
 ];
