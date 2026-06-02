@@ -12,6 +12,13 @@ if not DATABASE_URL:
 engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
 
+def init_schemas():
+    with engine.connect() as conn:
+        conn.execute(text("CREATE SCHEMA IF NOT EXISTS master_data"))
+        conn.commit()
+
+init_schemas()
+
 
 class Base(DeclarativeBase):
     pass
