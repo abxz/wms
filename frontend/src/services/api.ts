@@ -32,6 +32,7 @@ export const api = {
 
   // ─── 库位 ───
   getLocations: () => req("/locations"),
+  getLocationHistory: () => req("/locations"),
   createLocation: (d: any) => req("/locations", { method: "POST", body: JSON.stringify(d) }),
   updateLocation: (id: string, d: any) => req(`/locations/${id}`, { method: "PUT", body: JSON.stringify(d) }),
   deleteLocation: (id: string) => req(`/locations/${id}`, { method: "DELETE" }),
@@ -138,6 +139,18 @@ export const api = {
     if (!res.ok) throw new Error("二维码生成失败");
     return res.blob();
   },
+  getProductByQr: async (qrText: string) => {
+    // PDA扫码查商品：提取ID后调getProduct
+    const id = qrText.replace("QR-PROD-", "").replace("QR-", "");
+    return req(`/products/${id}`);
+  },
+  getEmployeeByQr: async (qrText: string) => {
+    // PDA扫码查员工：按qr_code搜索
+    return req(`/employees?search=${encodeURIComponent(qrText)}`).then((r: any) => {
+      const items = r.items || [];
+      return items.find((e: any) => e.qr_code === qrText) || items[0] || null;
+    });
+  },
   batchQR: async (items: { qr_text: string; filename: string }[]) => {
     const token = localStorage.getItem("wms_token") || localStorage.getItem("auth_token");
     const res = await fetch(`${API_BASE}/api/barcode/qrcode/batch`, {
@@ -215,4 +228,26 @@ export const api = {
     return res.json();
   },
   backupStats: () => req("/backup/stats"),
+
+  // ─── 劳保用品 ───
+  // 用品目录
+  laborSupplies: (p = 1, s = 20, q = "") => req(`/labor/supplies?page=${p}&size=${s}&search=${q}`),
+  laborSuppliesAll: () => req("/labor/supplies/all"),
+  laborSupplyGet: (id: string) => req(`/labor/supplies/${id}`),
+  laborSupplyCreate: (d: any) => req("/labor/supplies", { method: "POST", body: d }),
+  laborSupplyUpdate: (id: string, d: any) => req(`/labor/supplies/${id}`, { method: "PUT", body: d }),
+  laborSupplyDelete: (id: string) => req(`/labor/supplies/${id}`, { method: "DELETE" }),
+  laborInitGB: () => req("/labor/supplies/init-gb", { method: "POST" }),
+  // 岗位配置
+  laborConfigs: (p = 1, s = 20, q = "") => req(`/labor/configs?page=${p}&size=${s}&search=${q}`),
+  laborConfigsAll: () => req("/labor/configs/all"),
+  laborConfigsByPosition: (pos: string) => req(`/labor/configs/position/${pos}`),
+  laborConfigGet: (id: string) => req(`/labor/configs/${id}`),
+  laborConfigCreate: (d: any) => req("/labor/configs", { method: "POST", body: d }),
+  laborConfigUpdate: (id: string, d: any) => req(`/labor/configs/${id}`, { method: "PUT", body: d }),
+  laborConfigDelete: (id: string) => req(`/labor/configs/${id}`, { method: "DELETE" }),
+  // 领取
+  laborDistributions: (p = 1, s = 20, q = "") => req(`/labor/distributions?page=${p}&size=${s}&search=${q}`),
+  laborDistribute: (d: any) => req("/labor/distribute", { method: "POST", body: d }),
+  laborPending: (pos = "") => req(`/labor/pending?position=${pos}`),
 };

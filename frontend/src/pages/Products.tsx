@@ -238,7 +238,7 @@ export default function Products() {
                         <button onClick={() => setInboundModal({ ...item, quantity: 1 })} className="p-1 text-gray-400 hover:text-green-500" title="入库"><ArrowDownCircle size={14} /></button>
                         <button onClick={() => setOutboundModal({ ...item, quantity: 1 })} className="p-1 text-gray-400 hover:text-orange-500" title="出库"><ArrowUpCircle size={14} /></button>
                         <button onClick={() => setStockModal({ ...item, new_quantity: item.stock_quantity || 0, remark: "" })} className="p-1 text-gray-400 hover:text-purple-500" title="盘点"><ClipboardCheck size={14} /></button>
-                        <button onClick={() => downloadQR(item.id)} className="p-1 text-gray-400 hover:text-green-600" title="二维码"><QrCode size={14} /></button>
+                        <button onClick={() => downloadQR(item.id, item.name)} className="p-1 text-gray-400 hover:text-green-600" title="二维码"><QrCode size={14} /></button>
                         <button onClick={() => api.getProductInvoice(item.id).then(setInvoiceDetail).catch((e: any) => setErrorMsg(e?.message || "发票查询失败"))} className="p-1 text-gray-400 hover:text-purple-500" title="发票"><FileText size={14} /></button>
                         <button onClick={() => del(item.id)} className="p-1 text-gray-400 hover:text-red-500" title="删除"><Trash2 size={14} /></button>
                       </div>

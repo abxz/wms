@@ -197,6 +197,56 @@ class SystemConfig(Base):
     updated_at = Column(String(32), default="")
 
 
+class LaborSupply(Base):
+    """劳保用品目录"""
+    __tablename__ = "labor_supplies"
+    id = Column(String(32), primary_key=True)
+    name = Column(String(128), nullable=False)
+    category = Column(String(32), default="")      # 头部/眼面/呼吸/手足/躯体/防坠
+    spec = Column(String(128), default="")
+    unit = Column(String(16), default="个")
+    default_cycle_months = Column(Integer, default=12)
+    gb_ref = Column(String(64), default="")
+    remark = Column(Text, default="")
+    active = Column(Boolean, default=True)
+    created_at = Column(String(32), default="")
+    updated_at = Column(String(32), default="")
+
+
+class PositionLaborConfig(Base):
+    """岗位-劳保用品配置"""
+    __tablename__ = "position_labor_config"
+    id = Column(String(32), primary_key=True)
+    position = Column(String(64), nullable=False)
+    supply_id = Column(String(32), nullable=False)
+    supply_name = Column(String(128), default="")
+    cycle_months = Column(Integer, default=12)
+    qty_per_cycle = Column(Float, default=1)
+    active = Column(Boolean, default=True)
+    created_at = Column(String(32), default="")
+    updated_at = Column(String(32), default="")
+
+
+class LaborDistribution(Base):
+    """劳保用品领取记录"""
+    __tablename__ = "labor_distributions"
+    id = Column(String(32), primary_key=True)
+    employee_id = Column(String(32), nullable=False)
+    employee_name = Column(String(128), default="")
+    employee_no = Column(String(32), default="")
+    position = Column(String(64), default="")
+    supply_id = Column(String(32), nullable=False)
+    supply_name = Column(String(128), default="")
+    quantity = Column(Float, default=1)
+    planned_date = Column(String(32), default="")
+    actual_date = Column(String(32), default="")
+    next_date = Column(String(32), default="")
+    cycle_months = Column(Integer, default=12)
+    remark = Column(Text, default="")
+    created_at = Column(String(32), default="")
+    updated_at = Column(String(32), default="")
+
+
 # Register all models
 _TABLE_MODEL.update({
     "products": Product,
@@ -211,6 +261,9 @@ _TABLE_MODEL.update({
     "warehouses": Warehouse,
     "stock_mutations": StockMutation,
     "system_config": SystemConfig,
+    "labor_supplies": LaborSupply,
+    "position_labor_config": PositionLaborConfig,
+    "labor_distributions": LaborDistribution,
     # legacy JSON filenames → same models
     "products.json": Product,
     "locations.json": Location,
