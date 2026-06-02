@@ -150,4 +150,18 @@ export const api = {
   pdaLogin: (qr: string) => req("/auth/pda-login", { method: "POST", body: JSON.stringify({ qr_code: qr }) }),
   pdaLogout: (token: string) => req("/auth/pda-logout", { method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }),
   pdaVerify: (token: string) => req("/auth/pda-verify", { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }),
+
+  // ─── 基础数据（master_data schema）───
+  masterProducts: (search = "") => req(`/master/products?search=${encodeURIComponent(search)}`),
+  createMasterProduct: (d: any) => req("/master/products", { method: "POST", body: JSON.stringify(d) }),
+  updateMasterProduct: (id: string, d: any) => req(`/master/products/${id}`, { method: "PUT", body: JSON.stringify(d) }),
+  deleteMasterProduct: (id: string) => req(`/master/products/${id}`, { method: "DELETE" }),
+  masterSuppliers: (search = "") => req(`/master/suppliers?search=${encodeURIComponent(search)}`),
+  createMasterSupplier: (d: any) => req("/master/suppliers", { method: "POST", body: JSON.stringify(d) }),
+  updateMasterSupplier: (id: string, d: any) => req(`/master/suppliers/${id}`, { method: "PUT", body: JSON.stringify(d) }),
+  deleteMasterSupplier: (id: string) => req(`/master/suppliers/${id}`, { method: "DELETE" }),
+  masterEmployees: (search = "") => req(`/master/employees?search=${encodeURIComponent(search)}`),
+  createMasterEmployee: (d: any) => req("/master/employees", { method: "POST", body: JSON.stringify(d) }),
+  updateMasterEmployee: (id: string, d: any) => req(`/master/employees/${id}`, { method: "PUT", body: JSON.stringify(d) }),
+  deleteMasterEmployee: (id: string) => req(`/master/employees/${id}`, { method: "DELETE" }),
 };

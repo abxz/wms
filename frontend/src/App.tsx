@@ -13,6 +13,7 @@ const Invoices = lazy(() => import('./pages/Invoices'));
 const Employees = lazy(() => import('./pages/Employees'));
 const Locations = lazy(() => import('./pages/Locations'));
 const Warehouses = lazy(() => import('./pages/Warehouses'));
+const MasterData = lazy(() => import('./pages/MasterData'));
 
 const Loading = () => (
   <div className="flex items-center justify-center h-64">
@@ -45,6 +46,7 @@ export default function App() {
                 <Route path="/employees" element={<Employees />} />
                 <Route path="/locations" element={<Locations />} />
                 <Route path="/warehouses" element={<Warehouses />} />
+                <Route path="/master-data" element={<MasterData />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Suspense>

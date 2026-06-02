@@ -65,28 +65,51 @@ export default function Inbound() {
       <Modal open={modal} onClose={() => setModal(false)} title="新建入库单">
         <div className="space-y-3">
           {/* 供应商 */}
-          <select className="w-full border rounded-lg p-2 text-sm" value={form.supplier_id}
-            onChange={e => setForm({ ...form, supplier_id: e.target.value })}>
-            <option value="">选择供应商（可选）</option>
-            {suppliers.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
-          </select>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">供应商</label>
+            <select className="w-full border rounded-lg p-2 text-sm" value={form.supplier_id}
+              onChange={e => setForm({ ...form, supplier_id: e.target.value, items: [{ product_id: "", quantity: 1, price: 0 }] })}>
+              <option value="">选择供应商（可选）</option>
+              {suppliers.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+          </div>
 
           {/* 明细项 */}
-          {form.items.map((it, i) => (
-            <div key={i} className="border rounded-lg p-3 space-y-2">
-              <select className="w-full border rounded-lg p-2 text-sm" value={it.product_id}
-                onChange={e => { const ni = [...form.items]; ni[i] = { ...ni[i], product_id: e.target.value }; setForm({ ...form, items: ni }); }}>
-                <option value="">选择商品</option>
-                {products.map((p: any) => <option key={p.id} value={p.id}>{p.name} ({p.sku || p.id})</option>)}
-              </select>
-              <div className="flex gap-2">
-                <input className="flex-1 border rounded-lg p-2 text-sm" type="number" min={0} placeholder="数量" value={it.quantity}
-                  onChange={e => { const ni = [...form.items]; ni[i] = { ...ni[i], quantity: +e.target.value }; setForm({ ...form, items: ni }); }} />
-                <input className="flex-1 border rounded-lg p-2 text-sm" type="number" min={0} placeholder="单价" value={it.price}
-                  onChange={e => { const ni = [...form.items]; ni[i] = { ...ni[i], price: +e.target.value }; setForm({ ...form, items: ni }); }} />
+          {form.items.map((it, i) => {
+            // 根据选择的供应商过滤商品
+            const filteredProducts = form.supplier_id
+              ? products.filter((p: any) => p.supplier_id === form.supplier_id)
+              : products;
+            return (
+              <div key={i} className="border rounded-lg p-3 space-y-2">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">选择商品</label>
+                  <select className="w-full border rounded-lg p-2 text-sm" value={it.product_id}
+                    onChange={e => {
+                      const ni = [...form.items];
+                      const selected = filteredProducts.find((p: any) => p.id === e.target.value);
+                      ni[i] = { ...ni[i], product_id: e.target.value, price: selected?.price || 0 };
+                      setForm({ ...form, items: ni });
+                    }}>
+                    <option value="">选择商品</option>
+                    {filteredProducts.map((p: any) => <option key={p.id} value={p.id}>{p.name} ({p.sku || p.id})</option>)}
+                  </select>
+                </div>
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">数量</label>
+                    <input className="w-full border rounded-lg p-2 text-sm" type="number" min={0} placeholder="数量" value={it.quantity}
+                      onChange={e => { const ni = [...form.items]; ni[i] = { ...ni[i], quantity: +e.target.value }; setForm({ ...form, items: ni }); }} />
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">单价</label>
+                    <input className="w-full border rounded-lg p-2 text-sm" type="number" min={0} placeholder="单价" value={it.price}
+                      onChange={e => { const ni = [...form.items]; ni[i] = { ...ni[i], price: +e.target.value }; setForm({ ...form, items: ni }); }} />
+                  </div>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
           <button onClick={createAsync} className="w-full bg-blue-500 text-white py-2 rounded-lg font-medium">创建入库单</button>
         </div>
       </Modal>

@@ -16,6 +16,7 @@ const navItems = [
   { path: '/employees', label: '员工', icon: UserCircle },
   { path: '/locations', label: '库位', icon: MapPin },
   { path: '/warehouses', label: '仓库', icon: Warehouse },
+  { path: '/master-data', label: '基础数据', icon: FileText },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
