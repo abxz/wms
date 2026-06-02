@@ -1,13 +1,23 @@
 import { useEffect, useState } from "react";
 import { api } from "../services/api";
 import Modal from "../components/Modal";
-import { Plus, Edit2, Trash2, ShoppingCart, Search, Download, QrCode } from "lucide-react";
+import { Plus, Edit2, Trash2, ShoppingCart, Search, Download, QrCode, CheckSquare } from "lucide-react";
 import { Employee } from '../types';
 
 const ROLE_LABELS: Record<string, string> = {
   super_admin: "超级管理员",
   admin: "管理员",
   claimer: "领料员",
+  "爆破工": "爆破工",
+  "电工": "电工",
+  "仓管员": "仓管员",
+  "主管": "主管",
+  "安全员": "安全员",
+  "司机": "司机",
+  "搬运工": "搬运工",
+  "维修工": "维修工",
+  "化验员": "化验员",
+  "管理员": "管理员",
 };
 
 const ROLE_COLORS: Record<string, string> = {
@@ -30,6 +40,8 @@ export default function Employees() {
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [errorModal, setErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkConfirmModal, setBulkConfirmModal] = useState(false);
 
   const load = () => api.getEmployees(search).then((r: any) => setItems(r.items || r));
   useEffect(() => { load(); }, [search]);
@@ -78,6 +90,29 @@ export default function Employees() {
     load();
   };
 
+  const toggleSelect = (id: string) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+  const toggleSelectAll = () => {
+    if (selected.size === items.length) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(items.map((i: any) => i.id)));
+    }
+  };
+  const handleBulkDelete = async () => {
+    for (const id of selected) {
+      await api.deleteEmployee(id);
+    }
+    setBulkConfirmModal(false);
+    setSelected(new Set());
+    load();
+  };
+
   const downloadQR = async (item: any) => {
     try {
       const blob = await api.getEmployeeQR(item.id);
@@ -112,6 +147,12 @@ export default function Employees() {
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-bold">👤 员工管理</h1>
         <div className="flex gap-2">
+          {selected.size > 0 && (
+            <span className="text-sm text-gray-600 flex items-center gap-1">
+              已选{selected.size}人
+              <button onClick={() => setBulkConfirmModal(true)} className="bg-red-500 text-white px-3 py-2 rounded-lg text-sm flex items-center gap-1"><Trash2 size={16} /> 批量删除</button>
+            </span>
+          )}
           <button onClick={() => api.exportEmployees()} className="border px-3 py-2 rounded-lg text-sm flex items-center gap-1 text-gray-600"><Download size={16} /> 导出</button>
           <button onClick={openClaim} className="bg-green-500 text-white px-3 py-2 rounded-lg text-sm flex items-center gap-1"><ShoppingCart size={16} /> 领用</button>
           <button onClick={openNew} className="bg-blue-500 text-white px-3 py-2 rounded-lg text-sm flex items-center gap-1"><Plus size={16} /> 新增</button>
@@ -122,7 +163,7 @@ export default function Employees() {
         <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
         <input
           className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm"
-          placeholder="搜索姓名/工号/部门/角色..."
+          placeholder="搜索姓名/工号/部门/工种..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -134,9 +175,12 @@ export default function Employees() {
             <thead className="bg-gray-50 border-b text-gray-600">
               <tr>
                 <th className="px-3 py-2.5 text-left font-semibold">姓名/工号</th>
-                <th className="px-3 py-2.5 text-left font-semibold">角色</th>
+                <th className="px-3 py-2.5 text-left font-semibold">工种</th>
                 <th className="px-3 py-2.5 text-left font-semibold">部门</th>
                 <th className="px-3 py-2.5 text-left font-semibold">月度额度</th>
+                <th className="px-3 py-2.5 text-center font-semibold w-12">
+                  <input type="checkbox" className="rounded" checked={items.length > 0 && selected.size === items.length} onChange={toggleSelectAll} />
+                </th>
                 <th className="px-3 py-2.5 text-center font-semibold">操作</th>
               </tr>
             </thead>
@@ -155,7 +199,10 @@ export default function Employees() {
                     )}
                   </td>
                   <td className="px-3 py-2.5 text-gray-500">{item.department || "未分配"}</td>
-                  <td className="px-3 py-2.5 text-gray-500">¥{item.monthly_used}/{item.monthly_quota}</td>
+                  <td className="px-3 py-2.5 text-gray-500">不限</td>
+                  <td className="px-3 py-2.5 text-center">
+                    <input type="checkbox" className="rounded" checked={selected.has(item.id)} onChange={() => toggleSelect(item.id)} />
+                  </td>
                   <td className="px-3 py-2.5 text-center">
                     <div className="flex items-center gap-1 justify-center">
                       <button onClick={() => downloadQR(item)} className="p-1.5 text-gray-400 hover:text-green-500" title="二维码"><QrCode size={15} /></button>
@@ -166,7 +213,7 @@ export default function Employees() {
                 </tr>
               ))}
               {items.length === 0 && (
-                <tr><td colSpan={5} className="text-center text-gray-400 py-8">暂无员工</td></tr>
+                <tr><td colSpan={6} className="text-center text-gray-400 py-8">暂无员工</td></tr>
               )}
             </tbody>
           </table>
@@ -209,15 +256,12 @@ export default function Employees() {
             <div><label className="block text-sm font-medium text-gray-700 mb-1">身份证号</label><input className="w-full border rounded-lg p-2 text-sm" placeholder="18位身份证号" value={form.id_card} onChange={e => setForm({ ...form, id_card: e.target.value })} /></div>
           </div>
           <div><label className="block text-sm font-medium text-gray-700 mb-1">地址</label><input className="w-full border rounded-lg p-2 text-sm" placeholder="家庭住址" value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} /></div>
-          <div className="grid grid-cols-2 gap-3">
-            <div><label className="block text-sm font-medium text-gray-700 mb-1">月度配额</label><input className="w-full border rounded-lg p-2 text-sm" type="number" placeholder="1000" value={form.monthly_quota} onChange={e => setForm({ ...form, monthly_quota: +e.target.value })} /></div>
-            <div><label className="block text-sm font-medium text-gray-700 mb-1">角色</label>
-              <select className="w-full border rounded-lg p-2 text-sm" value={form.role} onChange={e => setForm({ ...form, role: e.target.value })}>
-                <option value="claimer">领料员</option>
-                <option value="admin">管理员</option>
-                <option value="super_admin">超级管理员</option>
-              </select>
-            </div>
+          <div><label className="block text-sm font-medium text-gray-700 mb-1">工种</label>
+            <select className="w-full border rounded-lg p-2 text-sm" value={form.role} onChange={e => setForm({ ...form, role: e.target.value })}>
+              <option value="claimer">领料员</option>
+              <option value="admin">管理员</option>
+              <option value="super_admin">超级管理员</option>
+            </select>
           </div>
           <button onClick={save} className="w-full bg-blue-500 text-white py-2 rounded-lg font-medium">{editing ? "保存修改" : "创建"}</button>
         </div>
@@ -246,6 +290,14 @@ export default function Employees() {
         <div className="flex gap-2 mt-4">
           <button onClick={() => setConfirmModal(false)} className="flex-1 border rounded-lg py-2 text-sm">取消</button>
           <button onClick={handleDelete} className="flex-1 bg-red-500 text-white rounded-lg py-2 text-sm">删除</button>
+        </div>
+      </Modal>
+
+      <Modal open={bulkConfirmModal} onClose={() => setBulkConfirmModal(false)} title="确认批量删除">
+        <p>确认删除选中的 {selected.size} 名员工？此操作不可恢复。</p>
+        <div className="flex gap-2 mt-4">
+          <button onClick={() => setBulkConfirmModal(false)} className="flex-1 border rounded-lg py-2 text-sm">取消</button>
+          <button onClick={handleBulkDelete} className="flex-1 bg-red-500 text-white rounded-lg py-2 text-sm">删除</button>
         </div>
       </Modal>
 

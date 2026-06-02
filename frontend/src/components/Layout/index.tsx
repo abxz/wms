@@ -3,7 +3,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Package, PackagePlus, Truck,
   Boxes, Building2, Receipt, HardHat, Grid3x3, Store, Database, Menu, X, QrCode, LogOut, DatabaseBackup,
-  ShieldCheck, Bell
+  ShieldCheck, Bell, Warehouse
 } from 'lucide-react';
 import { api } from '../../services/api';
 
