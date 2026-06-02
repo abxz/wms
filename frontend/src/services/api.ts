@@ -64,7 +64,7 @@ export const api = {
   // ─── 商品 ───
   getProducts: (p = 1, s = "", pg = 20, warehouseId = "") => req(`/products?page=${p}&size=${pg}&search=${encodeURIComponent(s)}${warehouseId ? `&warehouse_id=${warehouseId}` : ""}`),
   getProduct: (id: string) => req(`/products/${id}`),
-  getNextSku: (category: string) => req(`/products/next-sku?category=${encodeURIComponent(category)}`),
+  getNextSku: (category: string, name: string = "") => req(`/products/next-sku?category=${encodeURIComponent(category)}&name=${encodeURIComponent(name)}`),
   getProductInvoice: (id: string) => req(`/products/${id}/invoice`),
   createProduct: (d: any) => req("/products", { method: "POST", body: JSON.stringify(d) }),
   updateProduct: (id: string, d: any) => req(`/products/${id}`, { method: "PUT", body: JSON.stringify(d) }),

@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { api } from "../services/api";
 import Modal from "../components/Modal";
 import ScanInput from "../components/ScanInput";
+import SearchableSelect from "../components/SearchableSelect";
 import { Plus, Eye, CheckCircle, Trash2 } from "lucide-react";
 import { OutboundOrder, Product, Employee } from "../types";
 
@@ -53,7 +54,6 @@ export default function Outbound() {
   /* ─── 扫码处理 ─── */
   const handleScan = async (code: string) => {
     try {
-      // 尝试当员工码（先查员工）
       if (code.startsWith("QR-EMP") || code.includes("EMP")) {
         const emp = await api.getEmployeeByQr(code);
         if (emp) {
@@ -61,7 +61,6 @@ export default function Outbound() {
           return;
         }
       }
-      // 尝试当商品码
       if (code.startsWith("QR-PROD") || code.startsWith("QR-") || code.length > 4) {
         try {
           const prod = await api.getProductByQr(code);
@@ -111,7 +110,6 @@ export default function Outbound() {
       .map((it) => it.product_id)
       .filter((pid) => pid && !productCache[pid]);
     if (missingIds.length === 0) return;
-    // 批量加载
     await loadProducts();
   };
 
@@ -145,6 +143,13 @@ export default function Outbound() {
     s === "completed" ? "bg-green-100 text-green-600" :
     s === "cancelled" ? "bg-red-100 text-red-600" :
     "bg-yellow-100 text-yellow-600";
+
+  /* ─── SearchableSelect 选项映射 ─── */
+  const productOptions = products.map((p: any) => ({
+    value: p.id,
+    label: `${p.name}${p.spec ? ` (${p.spec})` : ""}`,
+    sublabel: `SKU: ${p.sku || p.id} 库存: ${p.stock_quantity ?? p.stock ?? "?"}`,
+  }));
 
   return (
     <div>
@@ -216,7 +221,7 @@ export default function Outbound() {
       </div>
 
       {/* ─── 新建出库单弹窗 ─── */}
-      <Modal open={modal} onClose={() => setModal(false)} title="新建出库单">
+      <Modal open={modal} onClose={() => setModal(false)} title="新建出库单" size="lg">
         <div className="space-y-4">
           {/* 领用人 */}
           <div>
@@ -254,26 +259,18 @@ export default function Outbound() {
                   </button>
                 )}
                 {/* 选择商品 */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">选择商品</label>
-                  <select
-                    className="w-full border rounded-lg p-2 text-sm"
-                    value={it.product_id}
-                    onChange={(e) => {
-                      const ni = [...form.items];
-                      const selected = products.find((p) => p.id === e.target.value);
-                      ni[i] = { ...ni[i], product_id: e.target.value, spec: selected?.spec || "" };
-                      setForm({ ...form, items: ni });
-                    }}
-                  >
-                    <option value="">选择商品</option>
-                    {products.map((p: any) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name} ({p.sku || p.id}) · 库存:{p.stock ?? "?"}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                <SearchableSelect
+                  label="选择商品"
+                  options={productOptions}
+                  value={it.product_id}
+                  onChange={(val) => {
+                    const ni = [...form.items];
+                    const selected = products.find((p) => p.id === val);
+                    ni[i] = { ...ni[i], product_id: val, spec: selected?.spec || "" };
+                    setForm({ ...form, items: ni });
+                  }}
+                  placeholder="搜索商品名称/SKU..."
+                />
                 {/* 规格 */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">规格</label>
@@ -339,7 +336,7 @@ export default function Outbound() {
       </Modal>
 
       {/* ─── 详情弹窗 ─── */}
-      <Modal open={detailOrder !== null} onClose={() => setDetailOrder(null)} title={`出库明细 - ${detailOrder?.order_no || ""}`}>
+      <Modal open={detailOrder !== null} onClose={() => setDetailOrder(null)} title={`出库明细 - ${detailOrder?.order_no || ""}`} size="xl">
         {detailOrder && (
           <div className="space-y-3">
             <div className="flex items-center justify-between text-sm text-gray-600">

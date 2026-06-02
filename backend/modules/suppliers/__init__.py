@@ -31,6 +31,11 @@ def route_update(sid: str, body: dict):
 
 @router.delete("/{sid}")
 def route_delete(sid: str):
+    # 删除保护：检查是否有关联商品
+    from core.database import all_
+    related = [p for p in all_("products") if p.get("supplier_id") == sid]
+    if related:
+        raise HTTPException(400, f"该供应商关联了 {len(related)} 个商品，无法删除。请先解除关联。")
     if not svc.delete_supplier(sid):
         raise HTTPException(404, "供应商不存在")
     return {"ok": True}

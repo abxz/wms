@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { api } from "../services/api";
 import Modal from "../components/Modal";
-import { Plus, Edit2, Trash2, ShoppingCart, Search, Download, QrCode, CheckSquare, Upload } from "lucide-react";
+import { Plus, Edit2, Trash2, ShoppingCart, Search, Download, QrCode, Upload, Building2, Briefcase, Users, Wrench } from "lucide-react";
 import ImportModal from "../components/ImportModal";
 import { Employee } from '../types';
 
@@ -27,7 +27,140 @@ const JOB_TYPE_OPTIONS = [
   "爆破工", "电工", "焊工", "钳工", "起重工", "信号工", "凿岩工", "装载机司机",
 ];
 
+// ─── HR顶级Tab定义 ───
+type HRTab = "employees" | "departments" | "positions" | "job_types" | "roles";
+const HR_TABS: { key: HRTab; label: string; icon: any }[] = [
+  { key: "employees", label: "员工档案", icon: Users },
+  { key: "departments", label: "部门管理", icon: Building2 },
+  { key: "positions", label: "岗位管理", icon: Briefcase },
+  { key: "job_types", label: "工种管理", icon: Wrench },
+  { key: "roles", label: "角色管理", icon: Users },
+];
+
+// ─── 配置列表子组件（部门/岗位/工种/角色共用）───
+function ConfigListTab({ configType }: { configType: string }) {
+  const [items, setItems] = useState<string[]>([]);
+  const [addModal, setAddModal] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [confirmModal, setConfirmModal] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<string | null>(null);
+  const [errorModal, setErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const load = async () => {
+    try {
+      const res = await api.getMasterConfig(configType);
+      setItems(res.items || []);
+    } catch {
+      setItems([]);
+    }
+  };
+
+  useEffect(() => { load(); }, [configType]);
+
+  const handleAdd = async () => {
+    try {
+      await api.addMasterConfig(configType, newName);
+      setAddModal(false);
+      setNewName("");
+      load();
+    } catch (e: any) {
+      setErrorMessage(e.message || "添加失败");
+      setErrorModal(true);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!pendingDelete) return;
+    try {
+      await api.deleteMasterConfig(configType, pendingDelete);
+      setConfirmModal(false);
+      setPendingDelete(null);
+      load();
+    } catch (e: any) {
+      setErrorMessage(e.message || "删除失败");
+      setErrorModal(true);
+      setConfirmModal(false);
+    }
+  };
+
+  const tabLabel = HR_TABS.find(t => t.key === configType)?.label?.replace("管理", "") || configType;
+
+  return (
+    <div>
+      <div className="bg-white rounded-xl border overflow-hidden">
+        <div className="flex items-center justify-between p-4 border-b">
+          <span className="text-sm font-medium text-gray-700">
+            {tabLabel}列表（{items.length}项）
+          </span>
+          <button onClick={() => { setNewName(""); setAddModal(true); }}
+            className="bg-blue-500 text-white px-3 py-1.5 rounded-lg text-sm flex items-center gap-1">
+            <Plus size={14} /> 新增
+          </button>
+        </div>
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50 border-b text-gray-600">
+            <tr>
+              <th className="px-4 py-2.5 text-left font-semibold">名称</th>
+              <th className="px-4 py-2.5 text-center font-semibold w-24">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((name, idx) => (
+              <tr key={idx} className="border-b hover:bg-gray-50 transition-colors">
+                <td className="px-4 py-2.5">{name}</td>
+                <td className="px-4 py-2.5 text-center">
+                  <button onClick={() => { setPendingDelete(name); setConfirmModal(true); }}
+                    className="p-1.5 text-gray-400 hover:text-red-500">
+                    <Trash2 size={15} />
+                  </button>
+                </td>
+              </tr>
+            ))}
+            {items.length === 0 && (
+              <tr><td colSpan={2} className="text-center text-gray-400 py-8">暂无数据</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* 新增弹窗 */}
+      <Modal open={addModal} onClose={() => setAddModal(false)} title={`新增${tabLabel}`}>
+        <div className="space-y-3">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">名称</label>
+            <input className="w-full border rounded-lg p-2 text-sm" placeholder="请输入名称"
+              value={newName} onChange={e => setNewName(e.target.value)} />
+          </div>
+          <button onClick={handleAdd} className="w-full bg-blue-500 text-white py-2 rounded-lg font-medium">确认添加</button>
+        </div>
+      </Modal>
+
+      {/* 删除确认 */}
+      <Modal open={confirmModal} onClose={() => setConfirmModal(false)} title="确认删除">
+        <p>确认删除 "{pendingDelete}"？此操作不可恢复。</p>
+        <div className="flex gap-2 mt-4">
+          <button onClick={() => setConfirmModal(false)} className="flex-1 border rounded-lg py-2 text-sm">取消</button>
+          <button onClick={handleDelete} className="flex-1 bg-red-500 text-white rounded-lg py-2 text-sm">删除</button>
+        </div>
+      </Modal>
+
+      {/* 错误弹窗 */}
+      <Modal open={errorModal} onClose={() => setErrorModal(false)} title="操作失败">
+        <p>{errorMessage}</p>
+        <div className="flex gap-2 mt-4">
+          <button onClick={() => setErrorModal(false)} className="w-full border rounded-lg py-2 text-sm">确定</button>
+        </div>
+      </Modal>
+    </div>
+  );
+}
+
+// ─── 主组件：人力资源管理 ───
 export default function Employees() {
+  const [hrTab, setHrTab] = useState<HRTab>("employees");
+
+  // ─── 员工档案相关状态 ───
   const [items, setItems] = useState<Employee[]>([]);
   const [search, setSearch] = useState("");
   const [filterDept, setFilterDept] = useState("");
@@ -52,7 +185,7 @@ export default function Employees() {
   const [importModal, setImportModal] = useState(false);
 
   const load = () => api.getEmployees(search).then((r: any) => setItems(r.items || r));
-  useEffect(() => { load(); }, [search]);
+  useEffect(() => { if (hrTab === "employees") load(); }, [search, hrTab]);
 
   // 前端筛选
   const filteredItems = useMemo(() => {
@@ -101,7 +234,6 @@ export default function Employees() {
   const openEdit = (item: Employee) => {
     setEditing(item);
     const fullName = item.name || "";
-    // 简单拆分：第一个字符为姓，其余为名
     setSurname(fullName ? fullName[0] : "");
     setGivenName(fullName.length > 1 ? fullName.slice(1) : "");
     setPreviewNo(item.employee_no || "");
@@ -202,8 +334,36 @@ export default function Employees() {
 
   return (
     <div>
+      {/* ─── 页面标题 ─── */}
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-xl font-bold">👤 员工管理</h1>
+        <h1 className="text-xl font-bold">👥 人力资源管理</h1>
+      </div>
+
+      {/* ─── HR顶级Tab导航 ─── */}
+      <div className="flex gap-1 mb-4 bg-gray-100 rounded-lg p-1 overflow-x-auto">
+        {HR_TABS.map(tab => (
+          <button
+            key={tab.key}
+            onClick={() => setHrTab(tab.key)}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
+              hrTab === tab.key
+                ? "bg-white text-blue-600 shadow-sm"
+                : "text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            <tab.icon size={16} />
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ─── 配置Tab内容（部门/岗位/工种/角色）─── */}
+      {hrTab !== "employees" && <ConfigListTab configType={hrTab} />}
+
+      {/* ─── 员工档案Tab内容 ─── */}
+      {hrTab === "employees" && (
+      <>
+      <div className="flex items-center justify-between mb-3">
         <div className="flex gap-2">
           {selected.size > 0 && (
             <span className="text-sm text-gray-600 flex items-center gap-1">
@@ -211,6 +371,8 @@ export default function Employees() {
               <button onClick={() => setBulkConfirmModal(true)} className="bg-red-500 text-white px-3 py-2 rounded-lg text-sm flex items-center gap-1"><Trash2 size={16} /> 批量删除</button>
             </span>
           )}
+        </div>
+        <div className="flex gap-2">
           <button onClick={() => api.exportEmployees()} className="border px-3 py-2 rounded-lg text-sm flex items-center gap-1 text-gray-600"><Download size={16} /> 导出</button>
           <button onClick={() => setImportModal(true)} className="border px-3 py-2 rounded-lg text-sm flex items-center gap-1 text-green-600 hover:bg-green-50"><Upload size={16} /> 导入</button>
           <button onClick={openClaim} className="bg-green-500 text-white px-3 py-2 rounded-lg text-sm flex items-center gap-1"><ShoppingCart size={16} /> 领用</button>
@@ -310,28 +472,21 @@ export default function Employees() {
           </table>
         </div>
       </div>
+      </>
+      )}
 
+      {/* ─── 员工编辑/新增弹窗 ─── */}
       <Modal open={modal} onClose={() => setModal(false)} title={editing ? "编辑员工" : "新增员工"}>
         <div className="space-y-3">
           {/* 姓名：姓+名 */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">姓 *</label>
-              <input
-                className="w-full border rounded-lg p-2 text-sm"
-                placeholder="姓"
-                value={surname}
-                onChange={e => setSurname(e.target.value)}
-              />
+              <input className="w-full border rounded-lg p-2 text-sm" placeholder="姓" value={surname} onChange={e => setSurname(e.target.value)} />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">名 *</label>
-              <input
-                className="w-full border rounded-lg p-2 text-sm"
-                placeholder="名"
-                value={givenName}
-                onChange={e => setGivenName(e.target.value)}
-              />
+              <input className="w-full border rounded-lg p-2 text-sm" placeholder="名" value={givenName} onChange={e => setGivenName(e.target.value)} />
             </div>
           </div>
           {/* 部门 + 岗位 */}
@@ -355,12 +510,7 @@ export default function Employees() {
           {/* 工号（只读预览） */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">工号</label>
-            <input
-              className="w-full border rounded-lg p-2 text-sm bg-gray-100"
-              placeholder="选择岗位并填写姓名后自动生成"
-              value={previewNo}
-              readOnly
-            />
+            <input className="w-full border rounded-lg p-2 text-sm bg-gray-100" placeholder="选择岗位并填写姓名后自动生成" value={previewNo} readOnly />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div><label className="block text-sm font-medium text-gray-700 mb-1">学历</label>
@@ -389,6 +539,7 @@ export default function Employees() {
         </div>
       </Modal>
 
+      {/* ─── 领用弹窗 ─── */}
       <Modal open={claimModal} onClose={() => setClaimModal(false)} title="员工领用">
         <div className="space-y-3">
           <div>
@@ -398,6 +549,14 @@ export default function Employees() {
               <option value="">选择员工</option>
               {claimEmployees.map((e: any) => <option key={e.id} value={e.id}>{e.name} ({e.employee_no})</option>)}
             </select>
+            {claim.employee_id && (() => {
+              const emp = claimEmployees.find((e: any) => e.id === claim.employee_id);
+              return emp ? (
+                <div className="text-xs text-gray-500 mt-1">
+                  部门: {emp.department || '未分配'} · 岗位: {emp.position || '-'} · 工种: {emp.job_type || '-'}
+                </div>
+              ) : null;
+            })()}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">商品</label>
@@ -416,6 +575,7 @@ export default function Employees() {
         </div>
       </Modal>
 
+      {/* ─── 通用弹窗 ─── */}
       <Modal open={confirmModal} onClose={() => setConfirmModal(false)} title="确认删除">
         <p>确认删除该员工？此操作不可恢复。</p>
         <div className="flex gap-2 mt-4">

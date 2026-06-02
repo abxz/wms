@@ -2,9 +2,14 @@ import { useEffect, useState } from "react";
 import { api } from "../services/api";
 import Modal from "../components/Modal";
 import ScanInput from "../components/ScanInput";
+import SearchableSelect from "../components/SearchableSelect";
 import { Plus, Eye, CheckCircle, Trash2 } from "lucide-react";
 import ImportModal from "../components/ImportModal";
 import { InboundOrder, Product, Supplier } from "../types";
+
+const CATEGORY_OPTIONS = [
+  "水泥", "骨料", "钢材", "砂石", "建材", "外加剂", "火工品", "工具器具", "劳保用品",
+];
 
 export default function Inbound() {
   /* ─── 列表状态 ─── */
@@ -24,6 +29,16 @@ export default function Inbound() {
     remark: "",
     purchase_type: "",
     contract_no: "",
+  });
+
+  /* ─── 新增商品弹窗 ─── */
+  const [newProductModal, setNewProductModal] = useState(false);
+  const [newProductForm, setNewProductForm] = useState({
+    name: "",
+    spec: "",
+    unit: "个",
+    category: "",
+    price: 0,
   });
 
   /* ─── 明细弹窗 ─── */
@@ -85,6 +100,33 @@ export default function Inbound() {
     } catch (e: any) { setErrorMsg(e.message); }
   };
 
+  /* ─── 新增商品 ─── */
+  const createProduct = async () => {
+    try {
+      if (!newProductForm.name.trim()) {
+        setErrorMsg("商品名称为必填项");
+        return;
+      }
+      const res = await api.createProduct(newProductForm);
+      // 重新加载商品列表
+      await loadProducts();
+      // 自动选中新建的商品到当前最后一行
+      const newId = res.id || res;
+      setForm((prev) => {
+        const ni = [...prev.items];
+        const lastIdx = ni.length - 1;
+        if (ni[lastIdx] && !ni[lastIdx].product_id) {
+          ni[lastIdx] = { ...ni[lastIdx], product_id: newId, price: newProductForm.price };
+        } else {
+          ni.push({ product_id: newId, quantity: 1, price: newProductForm.price });
+        }
+        return { ...prev, items: ni };
+      });
+      setNewProductModal(false);
+      setNewProductForm({ name: "", spec: "", unit: "个", category: "", price: 0 });
+    } catch (e: any) { setErrorMsg(e.message); }
+  };
+
   const complete = async (id: string) => {
     try { await api.completeInbound(id); load(); }
     catch (e: any) { setErrorMsg(e.message); }
@@ -115,6 +157,13 @@ export default function Inbound() {
     s === "completed" ? "bg-green-100 text-green-600" :
     s === "cancelled" ? "bg-red-100 text-red-600" :
     "bg-yellow-100 text-yellow-600";
+
+  /* ─── SearchableSelect 选项映射 ─── */
+  const productOptions = products.map((p: any) => ({
+    value: p.id,
+    label: `${p.name}${p.spec ? ` (${p.spec})` : ""}`,
+    sublabel: `SKU: ${p.sku || p.id} 库存: ${p.stock_quantity ?? p.stock ?? "?"}`,
+  }));
 
   return (
     <div>
@@ -194,7 +243,7 @@ export default function Inbound() {
       </div>
 
       {/* ─── 新建入库单弹窗 ─── */}
-      <Modal open={modal} onClose={() => setModal(false)} title="新建入库单">
+      <Modal open={modal} onClose={() => setModal(false)} title="新建入库单" size="lg">
         <div className="space-y-3">
           {/* 供应商 */}
           <div>
@@ -246,9 +295,9 @@ export default function Inbound() {
 
           {/* 明细项 */}
           {form.items.map((it, i) => {
-            const filteredProducts = form.supplier_id
-              ? products.filter((p: any) => p.supplier_id === form.supplier_id)
-              : products;
+            const filteredOptions = form.supplier_id
+              ? productOptions.filter((_, idx) => (products[idx] as any)?.supplier_id === form.supplier_id)
+              : productOptions;
             return (
               <div key={i} className="border rounded-lg p-3 space-y-2 relative">
                 {form.items.length > 1 && (
@@ -263,24 +312,18 @@ export default function Inbound() {
                     <Trash2 size={16} />
                   </button>
                 )}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">选择商品</label>
-                  <select
-                    className="w-full border rounded-lg p-2 text-sm"
-                    value={it.product_id}
-                    onChange={(e) => {
-                      const ni = [...form.items];
-                      const selected = filteredProducts.find((p: any) => p.id === e.target.value);
-                      ni[i] = { ...ni[i], product_id: e.target.value, price: selected?.price || 0 };
-                      setForm({ ...form, items: ni });
-                    }}
-                  >
-                    <option value="">选择商品</option>
-                    {filteredProducts.map((p: any) => (
-                      <option key={p.id} value={p.id}>{p.name} ({p.sku || p.id})</option>
-                    ))}
-                  </select>
-                </div>
+                <SearchableSelect
+                  label="选择商品"
+                  options={filteredOptions}
+                  value={it.product_id}
+                  onChange={(val) => {
+                    const ni = [...form.items];
+                    const selected = products.find((p) => p.id === val);
+                    ni[i] = { ...ni[i], product_id: val, price: (selected as any)?.price || 0 };
+                    setForm({ ...form, items: ni });
+                  }}
+                  placeholder="搜索商品名称/SKU..."
+                />
                 <div className="flex gap-2">
                   <div className="flex-1">
                     <label className="block text-sm font-medium text-gray-700 mb-1">数量</label>
@@ -315,14 +358,23 @@ export default function Inbound() {
             );
           })}
 
-          {/* 添加商品 */}
-          <button
-            type="button"
-            onClick={() => setForm({ ...form, items: [...form.items, { product_id: "", quantity: 1, price: 0 }] })}
-            className="w-full border-2 border-dashed border-gray-300 rounded-lg py-2 text-sm text-gray-500 hover:border-blue-400 hover:text-blue-500 flex items-center justify-center gap-1"
-          >
-            <Plus size={16} /> 添加商品
-          </button>
+          {/* 添加商品 + 新增商品 */}
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setForm({ ...form, items: [...form.items, { product_id: "", quantity: 1, price: 0 }] })}
+              className="flex-1 border-2 border-dashed border-gray-300 rounded-lg py-2 text-sm text-gray-500 hover:border-blue-400 hover:text-blue-500 flex items-center justify-center gap-1"
+            >
+              <Plus size={16} /> 添加商品
+            </button>
+            <button
+              type="button"
+              onClick={() => setNewProductModal(true)}
+              className="flex-1 border-2 border-dashed border-green-300 rounded-lg py-2 text-sm text-green-600 hover:border-green-500 hover:text-green-700 flex items-center justify-center gap-1"
+            >
+              ➕ 新增商品
+            </button>
+          </div>
 
           {/* 合计 */}
           <div className="bg-gray-50 rounded-lg p-3 flex items-center justify-between">
@@ -337,8 +389,74 @@ export default function Inbound() {
         </div>
       </Modal>
 
+      {/* ─── 新增商品弹窗 ─── */}
+      <Modal open={newProductModal} onClose={() => setNewProductModal(false)} title="➕ 新增商品">
+        <div className="space-y-3">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">商品名称 *</label>
+            <input
+              className="w-full border rounded-lg p-2 text-sm"
+              placeholder="输入商品名称"
+              value={newProductForm.name}
+              onChange={(e) => setNewProductForm({ ...newProductForm, name: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">规格</label>
+            <input
+              className="w-full border rounded-lg p-2 text-sm"
+              placeholder="如 50kg/袋、Φ16 等"
+              value={newProductForm.spec}
+              onChange={(e) => setNewProductForm({ ...newProductForm, spec: e.target.value })}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">单位</label>
+              <input
+                className="w-full border rounded-lg p-2 text-sm"
+                placeholder="默认：个"
+                value={newProductForm.unit}
+                onChange={(e) => setNewProductForm({ ...newProductForm, unit: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">分类</label>
+              <select
+                className="w-full border rounded-lg p-2 text-sm"
+                value={newProductForm.category}
+                onChange={(e) => setNewProductForm({ ...newProductForm, category: e.target.value })}
+              >
+                <option value="">选择分类</option>
+                {CATEGORY_OPTIONS.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">单价</label>
+            <input
+              className="w-full border rounded-lg p-2 text-sm"
+              type="number"
+              min={0}
+              value={newProductForm.price}
+              onChange={(e) => setNewProductForm({ ...newProductForm, price: +e.target.value })}
+            />
+          </div>
+          <div className="flex gap-2">
+            <button onClick={() => setNewProductModal(false)} className="flex-1 border rounded-lg py-2 text-sm">
+              取消
+            </button>
+            <button onClick={createProduct} className="flex-1 bg-green-500 text-white rounded-lg py-2 text-sm font-medium">
+              保存商品
+            </button>
+          </div>
+        </div>
+      </Modal>
+
       {/* ─── 详情弹窗 ─── */}
-      <Modal open={detailOrder !== null} onClose={() => setDetailOrder(null)} title={`入库明细 - ${detailOrder?.order_no || ""}`}>
+      <Modal open={detailOrder !== null} onClose={() => setDetailOrder(null)} title={`入库明细 - ${detailOrder?.order_no || ""}`} size="xl">
         {detailOrder && (
           <div className="space-y-3">
             <div className="flex items-center justify-between text-sm text-gray-600">

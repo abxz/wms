@@ -7,7 +7,7 @@ from uuid import uuid4
 FILE = "products"
 SEARCH_FIELDS = ["name", "sku", "barcode", "category", "spec", "invoice_number"]
 
-# SKU 分类前缀映射
+# SKU 分类前缀映射（拼音首字母大写，最多4字符）
 CATEGORY_PREFIX = {
     "水泥": "SN",
     "骨料": "GL",
@@ -22,21 +22,41 @@ CATEGORY_PREFIX = {
 }
 
 
-def generate_sku(category: str) -> str:
-    """根据分类生成下一个 SKU，格式：前缀-001"""
+def _get_name_initials(name: str) -> str:
+    """用 pypinyin 取商品名称每个字的拼音首字母大写，最多4字符"""
+    if not name:
+        return "XXXX"
+    try:
+        from pypinyin import pinyin, Style
+        initials = ''.join(
+            pinyin(char, style=Style.FIRST_LETTER)[0][0].upper()
+            for char in name if char.strip()
+        )
+        return initials[:4] if initials else "XXXX"
+    except Exception:
+        return name[:4].upper()
+
+
+def generate_sku(category: str, name: str = "") -> str:
+    """根据分类+商品名称生成 SKU，格式：分类缩写-名称缩写-10位编号
+    示例: SN-PTGS-0000000001
+    """
     prefix = CATEGORY_PREFIX.get(category, "QT")
-    # 查找该分类下最大的序号
+    name_abbr = _get_name_initials(name) if name else "XXXX"
+
+    # 查找该分类+名称缩写组合下的最大序号
+    pattern = f"{prefix}-{name_abbr}-"
     max_seq = 0
     for p in all_(FILE):
         sku = p.get("sku", "")
-        if sku.startswith(prefix + "-"):
+        if sku.startswith(pattern):
             try:
-                seq = int(sku.split("-")[1])
+                seq = int(sku[len(pattern):])
                 if seq > max_seq:
                     max_seq = seq
             except (ValueError, IndexError):
                 pass
-    return f"{prefix}-{max_seq + 1:03d}"
+    return f"{prefix}-{name_abbr}-{max_seq + 1:010d}"
 
 
 def _enrich_product(p: dict) -> dict:

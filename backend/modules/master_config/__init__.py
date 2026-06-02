@@ -60,6 +60,20 @@ def route_add(config_type: str, body: dict):
 def route_delete(config_type: str, name: str):
     if config_type not in VALID_TYPES:
         raise HTTPException(400, f"无效类型: {config_type}")
+    # 删除保护：检查是否有关联员工
+    from core.database import all_
+    employees = all_("employees")
+    FIELD_MAP = {
+        "departments": "department",
+        "positions": "position",
+        "job_types": "job_type",
+        "roles": "role",
+    }
+    field = FIELD_MAP.get(config_type)
+    if field:
+        count = len([e for e in employees if e.get(field) == name])
+        if count > 0:
+            raise HTTPException(400, f"该{config_type}关联了 {count} 名员工，无法删除。请先转移员工。")
     items = _get_list(config_type)
     if name not in items:
         raise HTTPException(404, f"'{name}'不存在")

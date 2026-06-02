@@ -20,9 +20,12 @@ def route_list(
 
 
 @router.get("/next-sku")
-def route_next_sku(category: str = Query("", description="商品分类")):
-    """预览指定分类的下一个 SKU"""
-    return {"sku": svc.generate_sku(category)}
+def route_next_sku(
+    category: str = Query("", description="商品分类"),
+    name: str = Query("", description="商品名称"),
+):
+    """预览指定分类+名称的下一个 SKU"""
+    return {"sku": svc.generate_sku(category, name)}
 
 
 @router.get("/{pid}")

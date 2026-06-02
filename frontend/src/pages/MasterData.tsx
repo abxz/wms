@@ -3,12 +3,11 @@ import { api } from "../services/api";
 import Modal from "../components/Modal";
 import { Plus, Search, Edit2, Trash2, X, Download, Upload } from "lucide-react";
 
-type TabKey = "products" | "suppliers" | "employees";
+type TabKey = "products" | "suppliers";
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: "products", label: "商品" },
   { key: "suppliers", label: "供应商" },
-  { key: "employees", label: "员工" },
 ];
 
 // ─── 商品表单 ───
@@ -49,19 +48,6 @@ function SupplierForm({ form, setForm }: { form: any; setForm: (f: any) => void 
   );
 }
 
-// ─── 员工表单 ───
-function EmployeeForm({ form, setForm }: { form: any; setForm: (f: any) => void }) {
-  return (
-    <div className="space-y-3">
-      <div><label className="block text-sm font-medium text-gray-700 mb-1">姓名 *</label><input className="w-full border rounded-lg p-2 text-sm" placeholder="请输入姓名" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
-      <div className="grid grid-cols-2 gap-3">
-        <div><label className="block text-sm font-medium text-gray-700 mb-1">工号</label><input className="w-full border rounded-lg p-2 text-sm" placeholder="员工工号" value={form.employee_no} onChange={e => setForm({ ...form, employee_no: e.target.value })} /></div>
-        <div><label className="block text-sm font-medium text-gray-700 mb-1">部门</label><input className="w-full border rounded-lg p-2 text-sm" placeholder="所属部门" value={form.department} onChange={e => setForm({ ...form, department: e.target.value })} /></div>
-      </div>
-    </div>
-  );
-}
-
 export default function MasterData() {
   const [tab, setTab] = useState<TabKey>("products");
   const [items, setItems] = useState<any[]>([]);
@@ -76,8 +62,7 @@ export default function MasterData() {
 
   const handleExport = () => {
     if (tab === "products") api.exportMasterProducts();
-    else if (tab === "suppliers") api.exportMasterSuppliers();
-    else api.exportMasterEmployees();
+    else api.exportMasterSuppliers();
   };
 
   const handleImport = async () => {
@@ -86,8 +71,7 @@ export default function MasterData() {
     try {
       let r: any;
       if (tab === "products") r = await api.uploadMasterProducts(file);
-      else if (tab === "suppliers") r = await api.uploadMasterSuppliers(file);
-      else r = await api.uploadMasterEmployees(file);
+      else r = await api.uploadMasterSuppliers(file);
       setImportResult(r);
       load();
     } catch (e: any) {
@@ -99,15 +83,13 @@ export default function MasterData() {
   const emptyForm = {
     products: { name: "", sku: "", spec: "", price: 0, unit: "个", category: "", barcode: "", supplier_id: "" },
     suppliers: { name: "", contact: "", phone: "", address: "", remark: "" },
-    employees: { name: "", employee_no: "", department: "" },
   }[tab];
 
   const [form, setForm] = useState(emptyForm);
 
   const load = useCallback(() => {
     if (tab === "products") api.masterProducts(search).then((r: any) => setItems(r.items || r));
-    else if (tab === "suppliers") api.masterSuppliers(search).then((r: any) => setItems(r.items || r));
-    else api.masterEmployees(search).then((r: any) => setItems(r.items || r));
+    else api.masterSuppliers(search).then((r: any) => setItems(r.items || r));
   }, [tab, search]);
 
   useEffect(() => {
@@ -133,12 +115,9 @@ export default function MasterData() {
       if (tab === "products") {
         if (edit) await api.updateMasterProduct(edit.id, form);
         else await api.createMasterProduct(form);
-      } else if (tab === "suppliers") {
+      } else {
         if (edit) await api.updateMasterSupplier(edit.id, form);
         else await api.createMasterSupplier(form);
-      } else {
-        if (edit) await api.updateMasterEmployee(edit.id, form);
-        else await api.createMasterEmployee(form);
       }
       setModal(false);
       setEdit(null);
@@ -150,8 +129,7 @@ export default function MasterData() {
     if (!deleteTarget) return;
     try {
       if (tab === "products") await api.deleteMasterProduct(deleteTarget.id);
-      else if (tab === "suppliers") await api.deleteMasterSupplier(deleteTarget.id);
-      else await api.deleteMasterEmployee(deleteTarget.id);
+      else await api.deleteMasterSupplier(deleteTarget.id);
       setDeleteTarget(null);
       load();
     } catch (e: any) { setErrorMsg(e?.message || "删除失败"); }
@@ -173,17 +151,11 @@ export default function MasterData() {
       { key: "phone", label: "电话" },
       { key: "address", label: "地址" },
     ],
-    employees: [
-      { key: "name", label: "姓名" },
-      { key: "employee_no", label: "工号" },
-      { key: "department", label: "部门" },
-    ],
   };
 
   const Forms: Record<TabKey, React.FC<any>> = {
     products: ProductForm,
     suppliers: SupplierForm,
-    employees: EmployeeForm,
   };
   const FormComponent = Forms[tab];
   const formProps = tab === "products" ? { form, setForm, suppliers: masterSuppliers } : { form, setForm };

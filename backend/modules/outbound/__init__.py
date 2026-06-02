@@ -27,10 +27,13 @@ def route_create(body: dict):
 
 @router.put("/{oid}/complete")
 def route_complete(oid: str):
-    order = svc.complete_outbound(oid)
-    if not order:
-        raise HTTPException(404, "出库单不存在")
-    return order
+    try:
+        order = svc.complete_outbound(oid)
+        if not order:
+            raise HTTPException(404, "出库单不存在")
+        return order
+    except ValueError as e:
+        raise HTTPException(400, str(e))
 
 @router.post("/batch", status_code=201)
 def route_batch_create(body: dict):

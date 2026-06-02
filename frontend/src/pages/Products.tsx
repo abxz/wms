@@ -30,11 +30,22 @@ export default function Products() {
   const [importModal, setImportModal] = useState(false);
   const [form, setForm] = useState({ name: "", sku: "", price: 0, category: "", barcode: "", unit: "个", warehouse_id: "", location_id: "", min_stock: 0, spec: "", supplier_id: "" });
 
-  // 分类变化时自动获取下一个 SKU
+  // 分类或名称变化时自动获取下一个 SKU
   const handleCategoryChange = (cat: string) => {
-    setForm({ ...form, category: cat, sku: "" });
+    const newForm = { ...form, category: cat, sku: "" };
+    setForm(newForm);
     if (cat && !edit) {
-      api.getNextSku(cat).then((r: any) => {
+      api.getNextSku(cat, newForm.name).then((r: any) => {
+        setForm(prev => ({ ...prev, sku: r.sku || "" }));
+      }).catch(() => {});
+    }
+  };
+
+  const handleNameChange = (name: string) => {
+    const newForm = { ...form, name };
+    setForm(newForm);
+    if (newForm.category && !edit) {
+      api.getNextSku(newForm.category, name).then((r: any) => {
         setForm(prev => ({ ...prev, sku: r.sku || "" }));
       }).catch(() => {});
     }
@@ -279,7 +290,7 @@ export default function Products() {
 
       <Modal open={modal} onClose={() => setModal(false)} title={edit ? "编辑商品" : "新增商品"}>
         <div className="space-y-3">
-          <div><label className="block text-sm font-medium text-gray-700 mb-1">商品名称 *</label><input className="w-full border rounded-lg p-2 text-sm" placeholder="请输入商品名称" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
+          <div><label className="block text-sm font-medium text-gray-700 mb-1">商品名称 *</label><input className="w-full border rounded-lg p-2 text-sm" placeholder="请输入商品名称" value={form.name} onChange={(e) => handleNameChange(e.target.value)} /></div>
           <div><label className="block text-sm font-medium text-gray-700 mb-1">规格</label><input className="w-full border rounded-lg p-2 text-sm" placeholder="规格型号" value={form.spec} onChange={(e) => setForm({ ...form, spec: e.target.value })} /></div>
           <div className="grid grid-cols-3 gap-3">
             <div><label className="block text-sm font-medium text-gray-700 mb-1">单价</label><input className="w-full border rounded-lg p-2 text-sm" type="number" placeholder="0.00" value={form.price} onChange={(e) => setForm({ ...form, price: +e.target.value })} /></div>

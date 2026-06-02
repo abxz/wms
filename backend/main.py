@@ -26,6 +26,24 @@ except Exception:
 
 app = FastAPI(title="仓储管理系统", version="2.1")
 
+
+@app.on_event("startup")
+async def _cleanup_orphan_inventory():
+    """启动时清理孤儿 inventory 记录（product_id 不存在或为空的）"""
+    try:
+        from core.database import all_, delete as db_delete
+        product_ids = {p["id"] for p in all_("products")}
+        orphans = [
+            inv for inv in all_("inventory")
+            if not inv.get("product_id") or inv["product_id"] not in product_ids
+        ]
+        for inv in orphans:
+            db_delete("inventory", inv["id"])
+        if orphans:
+            print(f"[startup] 已清理 {len(orphans)} 条孤儿 inventory 记录")
+    except Exception as e:
+        print(f"[startup] 孤儿 inventory 清理失败: {e}")
+
 # CORS —— 前端 :3000 调用
 _cors_origins = os.environ.get("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",")
 app.add_middleware(
