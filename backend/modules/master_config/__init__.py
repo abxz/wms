@@ -6,7 +6,7 @@ from core.utils import generate_id
 
 router = APIRouter(prefix="/api/master-config", tags=["基础数据管理"])
 
-VALID_TYPES = {"departments", "positions", "roles"}
+VALID_TYPES = {"departments", "positions", "roles", "job_types"}
 
 
 def _get_list(config_type: str) -> list:

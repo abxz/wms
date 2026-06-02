@@ -17,6 +17,9 @@ try:
         _conn.execute(text("ALTER TABLE inbound ADD COLUMN IF NOT EXISTS purchase_type VARCHAR(32) DEFAULT ''"))
         _conn.execute(text("ALTER TABLE inbound ADD COLUMN IF NOT EXISTS contract_no VARCHAR(64) DEFAULT ''"))
         _conn.execute(text("ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS contract_no VARCHAR(64) DEFAULT ''"))
+        _conn.execute(text("ALTER TABLE employees ADD COLUMN IF NOT EXISTS job_type VARCHAR(64) DEFAULT ''"))
+        _conn.execute(text("ALTER TABLE inventory ADD COLUMN IF NOT EXISTS min_stock DOUBLE PRECISION DEFAULT 0"))
+        _conn.execute(text("ALTER TABLE inventory ADD COLUMN IF NOT EXISTS max_stock DOUBLE PRECISION DEFAULT 999999"))
         _conn.commit()
 except Exception:
     pass  # table may not exist yet on first run

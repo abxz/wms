@@ -61,6 +61,7 @@ class Employee(Base):
     employee_no = Column(String(32), default="")
     department = Column(String(64), default="")
     position = Column(String(64), default="")  # 岗位
+    job_type = Column(String(64), default="")  # 工种
     role = Column(String(32), default="claimer")
     education = Column(String(32), default="")  # 学历
     id_card = Column(String(18), default="")  # 身份证号
@@ -92,6 +93,8 @@ class Inventory(Base):
     product_id = Column(String(32), nullable=False)
     quantity = Column(Float, default=0)
     location_id = Column(String(32), default="")
+    min_stock = Column(Float, default=0)
+    max_stock = Column(Float, default=999999)
     created_at = Column(String(32), default="")
     updated_at = Column(String(32), default="")
 

@@ -16,7 +16,7 @@ const Warehouses = lazy(() => import('./pages/Warehouses'));
 const MasterData = lazy(() => import('./pages/MasterData'));
 const BackupPage = lazy(() => import('./pages/BackupPage'));
 const LaborProtection = lazy(() => import('./pages/LaborProtection'));
-const MasterConfig = lazy(() => import('./pages/MasterConfig'));
+const HRManagement = lazy(() => import('./pages/MasterConfig'));
 
 const Loading = () => (
   <div className="flex items-center justify-center h-64">
@@ -52,7 +52,8 @@ export default function App() {
                 <Route path="/master-data" element={<MasterData />} />
                 <Route path="/backup" element={<BackupPage />} />
                 <Route path="/labor" element={<LaborProtection />} />
-                <Route path="/master-config" element={<MasterConfig />} />
+                <Route path="/hr-management" element={<HRManagement />} />
+                <Route path="/master-config" element={<Navigate to="/hr-management" replace />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Suspense>

@@ -31,6 +31,8 @@ export interface Inventory {
   product_id: string;
   quantity: number;
   location_id: string;
+  min_stock: number;
+  max_stock: number;
   updated_at?: string;
 }
 
@@ -125,6 +127,8 @@ export interface Employee {
   name: string;
   employee_no: string;
   department: string;
+  position?: string;
+  job_type?: string;
   monthly_quota: number;
   monthly_used: number;
   active: boolean;

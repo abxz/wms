@@ -20,7 +20,11 @@ const ROLE_COLORS: Record<string, string> = {
 };
 
 const POSITION_OPTIONS = [
-  "技术员", "管理员", "保管员", "采购员", "质检员", "安全员", "普通员工",
+  "班组长", "代班长", "队长", "车间主任", "安全主管",
+];
+
+const JOB_TYPE_OPTIONS = [
+  "爆破工", "电工", "焊工", "钳工", "起重工", "信号工", "凿岩工", "装载机司机",
 ];
 
 export default function Employees() {
@@ -32,7 +36,7 @@ export default function Employees() {
   const [modal, setModal] = useState(false);
   const [editing, setEditing] = useState<Employee | null>(null);
   const [claimModal, setClaimModal] = useState(false);
-  const [form, setForm] = useState({ name: "", department: "", position: "", education: "", id_card: "", address: "", monthly_quota: 1000, role: "claimer" });
+  const [form, setForm] = useState({ name: "", department: "", position: "", job_type: "", education: "", id_card: "", address: "", monthly_quota: 1000, role: "claimer" });
   const [surname, setSurname] = useState("");
   const [givenName, setGivenName] = useState("");
   const [previewNo, setPreviewNo] = useState("");
@@ -91,7 +95,7 @@ export default function Employees() {
     setSurname("");
     setGivenName("");
     setPreviewNo("");
-    setForm({ name: "", department: "", position: "", education: "", id_card: "", address: "", monthly_quota: 1000, role: "claimer" });
+    setForm({ name: "", department: "", position: "", job_type: "", education: "", id_card: "", address: "", monthly_quota: 1000, role: "claimer" });
     setModal(true);
   };
   const openEdit = (item: Employee) => {
@@ -105,6 +109,7 @@ export default function Employees() {
       name: item.name || "",
       department: item.department || "",
       position: (item as any).position || "",
+      job_type: (item as any).job_type || "",
       education: (item as any).education || "",
       id_card: (item as any).id_card || "",
       address: (item as any).address || "",
@@ -124,7 +129,7 @@ export default function Employees() {
       setSurname("");
       setGivenName("");
       setPreviewNo("");
-      setForm({ name: "", department: "", position: "", education: "", id_card: "", address: "", monthly_quota: 1000, role: "claimer" });
+      setForm({ name: "", department: "", position: "", job_type: "", education: "", id_card: "", address: "", monthly_quota: 1000, role: "claimer" });
       load();
     } catch (e: any) {
       setErrorMessage(e.message || "保存失败");
@@ -253,10 +258,13 @@ export default function Employees() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b text-gray-600">
               <tr>
-                <th className="px-3 py-2.5 text-left font-semibold">姓名/工号</th>
+                <th className="px-3 py-2.5 text-center font-semibold w-12">序号</th>
+                <th className="px-3 py-2.5 text-left font-semibold">工号</th>
+                <th className="px-3 py-2.5 text-left font-semibold">姓名</th>
                 <th className="px-3 py-2.5 text-left font-semibold">角色</th>
                 <th className="px-3 py-2.5 text-left font-semibold">部门</th>
                 <th className="px-3 py-2.5 text-left font-semibold">岗位</th>
+                <th className="px-3 py-2.5 text-left font-semibold">工种</th>
                 <th className="px-3 py-2.5 text-left font-semibold">月额度</th>
                 <th className="px-3 py-2.5 text-left font-semibold">已用</th>
                 <th className="px-3 py-2.5 text-center font-semibold w-12">
@@ -266,12 +274,11 @@ export default function Employees() {
               </tr>
             </thead>
             <tbody>
-              {filteredItems.map((item: any) => (
+              {filteredItems.map((item: any, index: number) => (
                 <tr key={item.id} className="border-b hover:bg-gray-50 transition-colors">
-                  <td className="px-3 py-2.5">
-                    <span className="font-medium">{item.name}</span>
-                    <span className="text-xs text-gray-400 ml-1">{item.employee_no}</span>
-                  </td>
+                  <td className="px-3 py-2.5 text-center text-gray-400">{index + 1}</td>
+                  <td className="px-3 py-2.5 text-gray-500 text-xs">{item.employee_no}</td>
+                  <td className="px-3 py-2.5 font-medium">{item.name}</td>
                   <td className="px-3 py-2.5">
                     {item.role && (
                       <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${ROLE_COLORS[item.role] || "bg-gray-100 text-gray-600"}`}>
@@ -281,6 +288,7 @@ export default function Employees() {
                   </td>
                   <td className="px-3 py-2.5 text-gray-500">{item.department || "未分配"}</td>
                   <td className="px-3 py-2.5 text-gray-500">{(item as any).position || "-"}</td>
+                  <td className="px-3 py-2.5 text-gray-500">{(item as any).job_type || "-"}</td>
                   <td className="px-3 py-2.5 text-gray-500">{item.monthly_quota && item.monthly_quota > 0 ? `¥${item.monthly_quota}` : "—"}</td>
                   <td className="px-3 py-2.5 text-gray-500">{item.monthly_used && item.monthly_used > 0 ? `¥${item.monthly_used}` : "—"}</td>
                   <td className="px-3 py-2.5 text-center">
@@ -296,7 +304,7 @@ export default function Employees() {
                 </tr>
               ))}
               {items.length === 0 && (
-                <tr><td colSpan={8} className="text-center text-gray-400 py-8">暂无员工</td></tr>
+                <tr><td colSpan={11} className="text-center text-gray-400 py-8">暂无员工</td></tr>
               )}
             </tbody>
           </table>
@@ -335,6 +343,14 @@ export default function Employees() {
                 {POSITION_OPTIONS.map(p => <option key={p} value={p}>{p}</option>)}
               </select>
             </div>
+          </div>
+          {/* 工种 */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">工种</label>
+            <select className="w-full border rounded-lg p-2 text-sm" value={form.job_type} onChange={e => setForm({ ...form, job_type: e.target.value })}>
+              <option value="">选择工种</option>
+              {JOB_TYPE_OPTIONS.map(j => <option key={j} value={j}>{j}</option>)}
+            </select>
           </div>
           {/* 工号（只读预览） */}
           <div>

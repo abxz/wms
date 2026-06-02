@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { api } from "../services/api";
 import Modal from "../components/Modal";
-import { Plus, Trash2, Building2, Briefcase, Users } from "lucide-react";
+import { Plus, Trash2, Building2, Briefcase, Users, Wrench } from "lucide-react";
 
 const TABS = [
   { key: "departments", label: "部门管理", icon: Building2 },
   { key: "positions", label: "岗位管理", icon: Briefcase },
+  { key: "job_types", label: "工种管理", icon: Wrench },
   { key: "roles", label: "角色管理", icon: Users },
 ];
 
@@ -68,7 +69,7 @@ export default function MasterConfig() {
 
   return (
     <div>
-      <h1 className="text-xl font-bold mb-4">⚙️ 基础数据管理</h1>
+      <h1 className="text-xl font-bold mb-4">👥 人力资源管理</h1>
 
       {/* Tab切换 */}
       <div className="flex gap-1 mb-4 bg-gray-100 rounded-lg p-1">

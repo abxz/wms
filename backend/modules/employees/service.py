@@ -10,6 +10,12 @@ SEARCH_FIELDS = ["name", "employee_no", "department", "role", "position"]
 
 # 岗位前缀映射（新格式）
 POSITION_PREFIX = {
+    "班组长": "BZ",
+    "代班长": "DB",
+    "队长": "DZ",
+    "车间主任": "CJ",
+    "安全主管": "AQ",
+    # 兼容旧岗位
     "技术员": "JS",
     "管理员": "GL",
     "保管员": "BG",
@@ -17,7 +23,6 @@ POSITION_PREFIX = {
     "质检员": "ZJ",
     "安全员": "AQ",
     "普通员工": "PT",
-    # 兼容旧岗位
     "爆破工": "BP",
     "电工": "DG",
     "仓管员": "CG",

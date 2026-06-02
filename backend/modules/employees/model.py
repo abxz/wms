@@ -8,6 +8,7 @@ class Employee(BaseModel):
     employee_no: str = ""
     department: str = ""
     position: str = ""               # 岗位
+    job_type: str = ""               # 工种
     role: str = "claimer"            # super_admin | admin | claimer
     education: str = ""              # 学历
     id_card: str = ""                # 身份证号
