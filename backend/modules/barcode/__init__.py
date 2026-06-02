@@ -96,7 +96,7 @@ def generate_qrcode_batch(body: dict):
 
 
 @router.post("/qrcode/product/{pid}")
-def generate_product_qrcode(pid: str):
+def generate_product_qrcode(pid: str, body: dict = {}):
     """生成单个商品二维码（含商品信息）"""
     product = get_by_id("products", pid)
     if not product:
