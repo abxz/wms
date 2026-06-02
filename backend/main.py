@@ -10,6 +10,16 @@ from core.database import Base, engine
 
 Base.metadata.create_all(bind=engine)
 
+# Auto-migration: add missing columns for existing tables
+try:
+    from sqlalchemy import text
+    with engine.connect() as _conn:
+        _conn.execute(text("ALTER TABLE inbound ADD COLUMN IF NOT EXISTS purchase_type VARCHAR(32) DEFAULT ''"))
+        _conn.execute(text("ALTER TABLE inbound ADD COLUMN IF NOT EXISTS contract_no VARCHAR(64) DEFAULT ''"))
+        _conn.commit()
+except Exception:
+    pass  # table may not exist yet on first run
+
 app = FastAPI(title="仓储管理系统", version="2.1")
 
 # CORS —— 前端 :3000 调用
@@ -54,6 +64,7 @@ from modules.master_data import register as reg_master_data
 from modules.backup import register as reg_backup
 from modules.labor_protection import register as reg_labor
 from modules.notifications import register as reg_notifications
+from modules.master_config import register as reg_master_config
 
 reg_products(app)
 reg_locations(app)
@@ -77,6 +88,7 @@ reg_master_data(app)
 reg_backup(app)
 reg_labor(app)
 reg_notifications(app)
+reg_master_config(app)
 
 
 @app.get("/api/health")

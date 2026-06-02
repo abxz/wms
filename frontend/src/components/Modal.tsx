@@ -16,7 +16,8 @@ export default function Modal({ open, onClose, title, children }: { open: boolea
   if (!open) return null;
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl max-w-lg w-full max-h-[80vh] overflow-y-auto shadow-2xl">
+      {/* 不允许点击背景关闭 */}
+      <div className="bg-white rounded-xl max-w-lg w-full max-h-[80vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between p-4 border-b sticky top-0 bg-white rounded-t-xl z-10">
           <h2 className="font-semibold text-lg">{title}</h2>
           <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg transition-colors"><X size={20} /></button>

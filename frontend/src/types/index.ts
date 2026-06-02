@@ -59,6 +59,9 @@ export interface InboundOrder {
   total_amount: number;
   status: 'pending' | 'completed' | 'cancelled';
   remark: string;
+  supplier_name?: string;
+  purchase_type?: string;
+  contract_no?: string;
   created_at?: string;
 }
 
@@ -70,6 +73,9 @@ export interface OutboundOrder {
   employee_id: string;
   status: 'pending' | 'completed' | 'cancelled';
   remark: string;
+  claimer_id?: string;
+  claimer_name?: string;
+  total_amount?: number;
   created_at?: string;
 }
 

@@ -16,5 +16,7 @@ class InboundOrder(BaseModel):
     status: str = "pending"
     max_items: int = 7              # 此单上限（新加）
     remark: str = ""
+    purchase_type: str = ""         # 采购类型：零星采购/合同采购
+    contract_no: str = ""           # 采购编号
     created_at: str = ""
     updated_at: str = ""

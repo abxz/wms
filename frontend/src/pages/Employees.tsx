@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { api } from "../services/api";
 import Modal from "../components/Modal";
 import { Plus, Edit2, Trash2, ShoppingCart, Search, Download, QrCode, CheckSquare } from "lucide-react";
@@ -6,25 +6,21 @@ import { Employee } from '../types';
 
 const ROLE_LABELS: Record<string, string> = {
   super_admin: "超级管理员",
-  admin: "管理员",
-  claimer: "领料员",
-  "爆破工": "爆破工",
-  "电工": "电工",
-  "仓管员": "仓管员",
-  "主管": "主管",
-  "安全员": "安全员",
-  "司机": "司机",
-  "搬运工": "搬运工",
-  "维修工": "维修工",
-  "化验员": "化验员",
-  "管理员": "管理员",
+  admin: "仓库管理员",
+  claimer: "领料人",
+  normal: "普通员工",
 };
 
 const ROLE_COLORS: Record<string, string> = {
   super_admin: "bg-purple-100 text-purple-700",
   admin: "bg-blue-100 text-blue-700",
   claimer: "bg-green-100 text-green-700",
+  normal: "bg-gray-100 text-gray-600",
 };
+
+const POSITION_OPTIONS = [
+  "技术员", "管理员", "保管员", "采购员", "质检员", "安全员", "普通员工",
+];
 
 export default function Employees() {
   const [items, setItems] = useState<Employee[]>([]);
@@ -33,6 +29,9 @@ export default function Employees() {
   const [editing, setEditing] = useState<Employee | null>(null);
   const [claimModal, setClaimModal] = useState(false);
   const [form, setForm] = useState({ name: "", department: "", position: "", education: "", id_card: "", address: "", monthly_quota: 1000, role: "claimer" });
+  const [surname, setSurname] = useState("");
+  const [givenName, setGivenName] = useState("");
+  const [previewNo, setPreviewNo] = useState("");
   const [claim, setClaim] = useState({ employee_id: "", product_id: "", quantity: 1 });
   const [claimEmployees, setClaimEmployees] = useState<any[]>([]);
   const [claimProducts, setClaimProducts] = useState<any[]>([]);
@@ -46,13 +45,42 @@ export default function Employees() {
   const load = () => api.getEmployees(search).then((r: any) => setItems(r.items || r));
   useEffect(() => { load(); }, [search]);
 
+  // 工号预览：position或姓名变化时调用API
+  const fetchPreviewNo = useCallback(async (position: string, name: string) => {
+    if (position && name) {
+      try {
+        const res = await api.getNextEmployeeNo(position, name);
+        setPreviewNo(res.employee_no || "");
+      } catch {
+        setPreviewNo("");
+      }
+    } else {
+      setPreviewNo("");
+    }
+  }, []);
+
+  useEffect(() => {
+    const fullName = surname + givenName;
+    if (!editing) {
+      fetchPreviewNo(form.position, fullName);
+    }
+  }, [form.position, surname, givenName, editing, fetchPreviewNo]);
+
   const openNew = () => {
     setEditing(null);
+    setSurname("");
+    setGivenName("");
+    setPreviewNo("");
     setForm({ name: "", department: "", position: "", education: "", id_card: "", address: "", monthly_quota: 1000, role: "claimer" });
     setModal(true);
   };
   const openEdit = (item: Employee) => {
     setEditing(item);
+    const fullName = item.name || "";
+    // 简单拆分：第一个字符为姓，其余为名
+    setSurname(fullName ? fullName[0] : "");
+    setGivenName(fullName.length > 1 ? fullName.slice(1) : "");
+    setPreviewNo(item.employee_no || "");
     setForm({
       name: item.name || "",
       department: item.department || "",
@@ -67,10 +95,15 @@ export default function Employees() {
   };
   const save = async () => {
     try {
-      if (editing) await api.updateEmployee(editing.id, form);
-      else await api.createEmployee(form);
+      const fullName = surname + givenName;
+      const saveData = { ...form, name: fullName, employee_no: previewNo };
+      if (editing) await api.updateEmployee(editing.id, saveData);
+      else await api.createEmployee(saveData);
       setModal(false);
       setEditing(null);
+      setSurname("");
+      setGivenName("");
+      setPreviewNo("");
       setForm({ name: "", department: "", position: "", education: "", id_card: "", address: "", monthly_quota: 1000, role: "claimer" });
       load();
     } catch (e: any) {
@@ -163,7 +196,7 @@ export default function Employees() {
         <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
         <input
           className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm"
-          placeholder="搜索姓名/工号/部门/工种..."
+          placeholder="搜索姓名/工号/部门/角色..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -175,7 +208,7 @@ export default function Employees() {
             <thead className="bg-gray-50 border-b text-gray-600">
               <tr>
                 <th className="px-3 py-2.5 text-left font-semibold">姓名/工号</th>
-                <th className="px-3 py-2.5 text-left font-semibold">工种</th>
+                <th className="px-3 py-2.5 text-left font-semibold">角色</th>
                 <th className="px-3 py-2.5 text-left font-semibold">部门</th>
                 <th className="px-3 py-2.5 text-left font-semibold">月度额度</th>
                 <th className="px-3 py-2.5 text-center font-semibold w-12">
@@ -222,24 +255,46 @@ export default function Employees() {
 
       <Modal open={modal} onClose={() => setModal(false)} title={editing ? "编辑员工" : "新增员工"}>
         <div className="space-y-3">
-          <div><label className="block text-sm font-medium text-gray-700 mb-1">姓名 *</label><input className="w-full border rounded-lg p-2 text-sm" placeholder="请输入姓名" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
+          {/* 姓名：姓+名 */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">姓 *</label>
+              <input
+                className="w-full border rounded-lg p-2 text-sm"
+                placeholder="姓"
+                value={surname}
+                onChange={e => setSurname(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">名 *</label>
+              <input
+                className="w-full border rounded-lg p-2 text-sm"
+                placeholder="名"
+                value={givenName}
+                onChange={e => setGivenName(e.target.value)}
+              />
+            </div>
+          </div>
+          {/* 部门 + 岗位 */}
           <div className="grid grid-cols-2 gap-3">
             <div><label className="block text-sm font-medium text-gray-700 mb-1">部门</label><input className="w-full border rounded-lg p-2 text-sm" placeholder="所属部门" value={form.department} onChange={e => setForm({ ...form, department: e.target.value })} /></div>
             <div><label className="block text-sm font-medium text-gray-700 mb-1">岗位</label>
               <select className="w-full border rounded-lg p-2 text-sm" value={form.position} onChange={e => setForm({ ...form, position: e.target.value })}>
                 <option value="">选择岗位</option>
-                <option value="爆破工">爆破工</option>
-                <option value="电工">电工</option>
-                <option value="仓管员">仓管员</option>
-                <option value="主管">主管</option>
-                <option value="安全员">安全员</option>
-                <option value="司机">司机</option>
-                <option value="搬运工">搬运工</option>
-                <option value="维修工">维修工</option>
-                <option value="化验员">化验员</option>
-                <option value="管理员">管理员</option>
+                {POSITION_OPTIONS.map(p => <option key={p} value={p}>{p}</option>)}
               </select>
             </div>
+          </div>
+          {/* 工号（只读预览） */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">工号</label>
+            <input
+              className="w-full border rounded-lg p-2 text-sm bg-gray-100"
+              placeholder="选择岗位并填写姓名后自动生成"
+              value={previewNo}
+              readOnly
+            />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div><label className="block text-sm font-medium text-gray-700 mb-1">学历</label>
@@ -256,11 +311,12 @@ export default function Employees() {
             <div><label className="block text-sm font-medium text-gray-700 mb-1">身份证号</label><input className="w-full border rounded-lg p-2 text-sm" placeholder="18位身份证号" value={form.id_card} onChange={e => setForm({ ...form, id_card: e.target.value })} /></div>
           </div>
           <div><label className="block text-sm font-medium text-gray-700 mb-1">地址</label><input className="w-full border rounded-lg p-2 text-sm" placeholder="家庭住址" value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} /></div>
-          <div><label className="block text-sm font-medium text-gray-700 mb-1">工种</label>
+          <div><label className="block text-sm font-medium text-gray-700 mb-1">角色</label>
             <select className="w-full border rounded-lg p-2 text-sm" value={form.role} onChange={e => setForm({ ...form, role: e.target.value })}>
-              <option value="claimer">领料员</option>
-              <option value="admin">管理员</option>
+              <option value="claimer">领料人</option>
+              <option value="admin">仓库管理员</option>
               <option value="super_admin">超级管理员</option>
+              <option value="normal">普通员工</option>
             </select>
           </div>
           <button onClick={save} className="w-full bg-blue-500 text-white py-2 rounded-lg font-medium">{editing ? "保存修改" : "创建"}</button>
@@ -269,18 +325,27 @@ export default function Employees() {
 
       <Modal open={claimModal} onClose={() => setClaimModal(false)} title="员工领用">
         <div className="space-y-3">
-          <select className="w-full border rounded-lg p-2 text-sm" value={claim.employee_id}
-            onChange={e => setClaim({ ...claim, employee_id: e.target.value })}>
-            <option value="">选择员工</option>
-            {claimEmployees.map((e: any) => <option key={e.id} value={e.id}>{e.name} ({e.employee_no})</option>)}
-          </select>
-          <select className="w-full border rounded-lg p-2 text-sm" value={claim.product_id}
-            onChange={e => setClaim({ ...claim, product_id: e.target.value })}>
-            <option value="">选择商品</option>
-            {claimProducts.map((p: any) => <option key={p.id} value={p.id}>{p.name} ({p.sku || p.id})</option>)}
-          </select>
-          <input className="w-full border rounded-lg p-2 text-sm" type="number" min={1} placeholder="数量" value={claim.quantity}
-            onChange={e => setClaim({ ...claim, quantity: +e.target.value })} />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">员工</label>
+            <select className="w-full border rounded-lg p-2 text-sm" value={claim.employee_id}
+              onChange={e => setClaim({ ...claim, employee_id: e.target.value })}>
+              <option value="">选择员工</option>
+              {claimEmployees.map((e: any) => <option key={e.id} value={e.id}>{e.name} ({e.employee_no})</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">商品</label>
+            <select className="w-full border rounded-lg p-2 text-sm" value={claim.product_id}
+              onChange={e => setClaim({ ...claim, product_id: e.target.value })}>
+              <option value="">选择商品</option>
+              {claimProducts.map((p: any) => <option key={p.id} value={p.id}>{p.name} ({p.sku || p.id})</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">数量</label>
+            <input className="w-full border rounded-lg p-2 text-sm" type="number" min={1} placeholder="数量" value={claim.quantity}
+              onChange={e => setClaim({ ...claim, quantity: +e.target.value })} />
+          </div>
           <button onClick={doClaim} className="w-full bg-green-500 text-white py-2 rounded-lg font-medium">确认领用</button>
         </div>
       </Modal>

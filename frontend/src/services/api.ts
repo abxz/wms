@@ -1,5 +1,45 @@
+import { showToast } from '../utils/toast';
+
 // API 基础地址：优先环境变量，其次当前域名（代理模式兼容）
 const API_BASE = (window as any).__WMS_API_BASE__ || window.location.origin;
+
+// ─── 通用认证下载（fetch+blob 替代 window.open）───
+async function authDownload(url: string, filename?: string) {
+  const token = localStorage.getItem("wms_token") || localStorage.getItem("auth_token");
+  const res = await fetch(url, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(errText || `下载失败 HTTP ${res.status}`);
+  }
+  const blob = await res.blob();
+  const blobUrl = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = blobUrl;
+  a.download = filename || url.split("/").pop() || "download";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(blobUrl);
+}
+
+// ─── 认证文件上传（FormData + token）───
+async function authUpload(url: string, file: File): Promise<any> {
+  const token = localStorage.getItem("wms_token") || localStorage.getItem("auth_token");
+  const form = new FormData();
+  form.append("file", file);
+  const res = await fetch(url, {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: form,
+  });
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(errText || `上传失败 HTTP ${res.status}`);
+  }
+  return res.json();
+}
 
 async function req<T = any>(path: string, options?: RequestInit): Promise<T> {
   const token = localStorage.getItem("wms_token") || localStorage.getItem("auth_token");
@@ -46,7 +86,7 @@ export const api = {
   // ─── 员工 ───
   getEmployees: (search = "") => req(`/employees?search=${encodeURIComponent(search)}`),
   getEmployee: (id: string) => req(`/employees/${id}`),
-  getNextEmployeeNo: (position: string) => req(`/employees/next-no?position=${encodeURIComponent(position)}`),
+  getNextEmployeeNo: (position: string, name: string = "") => req(`/employees/next-no?position=${encodeURIComponent(position)}&name=${encodeURIComponent(name)}`),
   createEmployee: (d: any) => req("/employees", { method: "POST", body: JSON.stringify(d) }),
   updateEmployee: (id: string, d: any) => req(`/employees/${id}`, { method: "PUT", body: JSON.stringify(d) }),
   deleteEmployee: (id: string) => req(`/employees/${id}`, { method: "DELETE" }),
@@ -110,11 +150,41 @@ export const api = {
   getEmailConfig: () => req('/invoice-collector/email/config'),
   setEmailConfig: (cfg: any) => req('/invoice-collector/email/config', { method: 'POST', body: JSON.stringify(cfg) }),
 
-  // ─── 导出 ───
-  exportProducts: () => window.open(`${API_BASE}/api/import/export/products`, "_blank"),
-  exportSuppliers: () => window.open(`${API_BASE}/api/import/export/suppliers`, "_blank"),
-  exportEmployees: () => window.open(`${API_BASE}/api/import/export/employees`, "_blank"),
-  exportInventory: () => window.open(`${API_BASE}/api/import/export/inventory`, "_blank"),
+  // ─── 导出（认证下载 + Toast提示）───
+  exportProducts: async () => {
+    await authDownload(`${API_BASE}/api/import/export/products`, "商品列表.xlsx");
+    showToast("导出成功");
+  },
+  exportSuppliers: async () => {
+    await authDownload(`${API_BASE}/api/import/export/suppliers`, "供应商列表.xlsx");
+    showToast("导出成功");
+  },
+  exportEmployees: async () => {
+    await authDownload(`${API_BASE}/api/import/export/employees`, "员工列表.xlsx");
+    showToast("导出成功");
+  },
+  exportInventory: async () => {
+    await authDownload(`${API_BASE}/api/import/export/inventory`, "库存列表.xlsx");
+    showToast("导出成功");
+  },
+
+  // ─── 模板下载 ───
+  downloadTemplate: async (type: 'main-data' | 'employees' | 'orders' | 'master-products' | 'master-suppliers' | 'master-employees') => {
+    const filenameMap: Record<string, string> = {
+      'main-data': '主数据导入模板.xlsx',
+      'employees': '员工导入模板.xlsx',
+      'orders': '订单导入模板.xlsx',
+      'master-products': '基础商品模板.xlsx',
+      'master-suppliers': '基础供应商模板.xlsx',
+      'master-employees': '基础员工模板.xlsx',
+    };
+    await authDownload(`${API_BASE}/api/import/template/${type}`, filenameMap[type] || '导入模板.xlsx');
+  },
+
+  // ─── 通用导入（带认证）───
+  importMainData: (file: File) => authUpload(`${API_BASE}/api/import/main-data`, file),
+  importEmployees: (file: File) => authUpload(`${API_BASE}/api/import/employees`, file),
+  importOrders: (file: File) => authUpload(`${API_BASE}/api/import/orders`, file),
 
   // ─── 面板 ───
   getDashboard: () => req("/dashboard/summary"),
@@ -168,7 +238,9 @@ export const api = {
     const a = document.createElement("a");
     a.href = url;
     a.download = "qrcodes.zip";
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
     URL.revokeObjectURL(url);
   },
   pdaLogin: (qr: string) => req("/auth/pda-login", { method: "POST", body: JSON.stringify({ qr_code: qr }) }),
@@ -189,33 +261,29 @@ export const api = {
   updateMasterEmployee: (id: string, d: any) => req(`/master/employees/${id}`, { method: "PUT", body: JSON.stringify(d) }),
   deleteMasterEmployee: (id: string) => req(`/master/employees/${id}`, { method: "DELETE" }),
 
-  // ─── 基础数据导入导出 ───
-  exportMasterProducts: () => window.open(`${API_BASE}/api/import/export/master-products`, "_blank"),
-  exportMasterSuppliers: () => window.open(`${API_BASE}/api/import/export/master-suppliers`, "_blank"),
-  exportMasterEmployees: () => window.open(`${API_BASE}/api/import/export/master-employees`, "_blank"),
-  uploadMasterProducts: async (file: File) => {
-    const form = new FormData(); form.append("file", file);
-    const res = await fetch(`${API_BASE}/api/import/import/master-products`, { method: "POST", body: form });
-    if (!res.ok) throw new Error(await res.text());
-    return res.json();
+  // ─── 基础数据导入导出（认证修复）───
+  exportMasterProducts: async () => {
+    await authDownload(`${API_BASE}/api/import/export/master-products`, "基础商品列表.xlsx");
+    showToast("导出成功");
   },
-  uploadMasterSuppliers: async (file: File) => {
-    const form = new FormData(); form.append("file", file);
-    const res = await fetch(`${API_BASE}/api/import/import/master-suppliers`, { method: "POST", body: form });
-    if (!res.ok) throw new Error(await res.text());
-    return res.json();
+  exportMasterSuppliers: async () => {
+    await authDownload(`${API_BASE}/api/import/export/master-suppliers`, "基础供应商列表.xlsx");
+    showToast("导出成功");
   },
-  uploadMasterEmployees: async (file: File) => {
-    const form = new FormData(); form.append("file", file);
-    const res = await fetch(`${API_BASE}/api/import/import/master-employees`, { method: "POST", body: form });
-    if (!res.ok) throw new Error(await res.text());
-    return res.json();
+  exportMasterEmployees: async () => {
+    await authDownload(`${API_BASE}/api/import/export/master-employees`, "基础员工列表.xlsx");
+    showToast("导出成功");
   },
+  uploadMasterProducts: (file: File) => authUpload(`${API_BASE}/api/import/import/master-products`, file),
+  uploadMasterSuppliers: (file: File) => authUpload(`${API_BASE}/api/import/import/master-suppliers`, file),
+  uploadMasterEmployees: (file: File) => authUpload(`${API_BASE}/api/import/import/master-employees`, file),
 
   // ─── 数据备份 ───
   backupCreate: () => req("/backup/create", { method: "POST" }),
   backupList: () => req("/backup/list"),
-  backupDownload: (filename: string) => window.open(`${API_BASE}/api/backup/download/${filename}`, "_blank"),
+  backupDownload: async (filename: string) => {
+    await authDownload(`${API_BASE}/api/backup/download/${filename}`, filename);
+  },
   backupDelete: (filename: string) => req(`/backup/${filename}`, { method: "DELETE" }),
   backupRestore: async (file: File) => {
     const form = new FormData(); form.append("file", file);
@@ -258,4 +326,9 @@ export const api = {
   getUnreadCount: () => req("/notifications/unread-count"),
   markNotificationRead: (id: string) => req(`/notifications/${id}/read`, { method: "PUT" }),
   markAllNotificationsRead: () => req("/notifications/mark-all-read", { method: "POST" }),
+
+  // ─── 基础数据配置 ───
+  getMasterConfig: (type: string) => req(`/master-config/${type}`),
+  addMasterConfig: (type: string, name: string) => req(`/master-config/${type}`, { method: "POST", body: JSON.stringify({ name }) }),
+  deleteMasterConfig: (type: string, name: string) => req(`/master-config/${type}/${encodeURIComponent(name)}`, { method: "DELETE" }),
 };

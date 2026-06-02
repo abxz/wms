@@ -109,6 +109,8 @@ class InboundOrder(Base):
     status = Column(String(32), default="pending")
     max_items = Column(Integer, default=7)
     remark = Column(Text, default="")
+    purchase_type = Column(String(32), default="")
+    contract_no = Column(String(64), default="")
     created_at = Column(String(32), default="")
     updated_at = Column(String(32), default="")
 

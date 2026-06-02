@@ -3,7 +3,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Package, PackagePlus, Truck,
   Boxes, Building2, Receipt, HardHat, Grid3x3, Store, Database, Menu, X, QrCode, LogOut, DatabaseBackup,
-  ShieldCheck, Bell, Warehouse
+  ShieldCheck, Bell, Warehouse, Settings
 } from 'lucide-react';
 import { api } from '../../services/api';
 
@@ -21,6 +21,7 @@ const navItems = [
   { path: '/master-data', label: '基础数据', icon: Database },
   { path: '/backup', label: '数据备份', icon: DatabaseBackup },
   { path: '/labor', label: '劳保用品', icon: ShieldCheck },
+  { path: '/master-config', label: '基础数据配置', icon: Settings },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {

@@ -13,9 +13,9 @@ def route_list(page: int = Query(1, ge=1), size: int = Query(20, ge=1, le=100), 
 
 
 @router.get("/next-no")
-def route_next_no(position: str = Query("", description="岗位")):
-    """预览指定岗位的下一个员工编号"""
-    return {"employee_no": svc.generate_employee_no(position)}
+def route_next_no(position: str = Query("", description="岗位"), name: str = Query("", description="姓名")):
+    """预览指定岗位+姓名的下一个员工编号"""
+    return {"employee_no": svc.generate_employee_no(position, name)}
 
 @router.get("/{eid}")
 def route_get(eid: str):

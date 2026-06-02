@@ -1,7 +1,8 @@
 import { useEffect, useState, useCallback } from "react";
 import { api } from "../services/api";
 import Modal from "../components/Modal";
-import { Plus, Search, Edit2, Trash2, QrCode, Download, FileText, ArrowDownCircle, ArrowUpCircle, ClipboardCheck } from "lucide-react";
+import ImportModal from "../components/ImportModal";
+import { Plus, Search, Edit2, Trash2, QrCode, Download, Upload, FileText, ArrowDownCircle, ArrowUpCircle, ClipboardCheck } from "lucide-react";
 import { Product, PaginatedResult, Warehouse } from "../types";
 
 const STATUS_MAP: Record<string, { label: string; cls: string }> = {
@@ -26,6 +27,7 @@ export default function Products() {
   const [inboundModal, setInboundModal] = useState<any>(null);
   const [outboundModal, setOutboundModal] = useState<any>(null);
   const [stockModal, setStockModal] = useState<any>(null);
+  const [importModal, setImportModal] = useState(false);
   const [form, setForm] = useState({ name: "", sku: "", price: 0, category: "", barcode: "", unit: "个", warehouse_id: "", location_id: "", min_stock: 0, spec: "", supplier_id: "" });
 
   // 分类变化时自动获取下一个 SKU
@@ -154,6 +156,9 @@ export default function Products() {
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-bold">📦 商品管理</h1>
         <div className="flex gap-2">
+          <button onClick={() => setImportModal(true)} className="border px-3 py-2 rounded-lg text-sm flex items-center gap-1 text-green-600 hover:bg-green-50">
+            <Upload size={16} /> 导入
+          </button>
           <button onClick={() => api.exportProducts()} className="border px-3 py-2 rounded-lg text-sm flex items-center gap-1 text-gray-600">
             <Download size={16} /> 导出
           </button>
@@ -169,7 +174,9 @@ export default function Products() {
       <div className="flex gap-3 mb-3">
         <div className="relative flex-1">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <label htmlFor="product-search" className="sr-only">搜索商品</label>
           <input
+            id="product-search"
             className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm"
             placeholder="搜索商品名/SKU/条码..."
 
@@ -177,16 +184,20 @@ export default function Products() {
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
           />
         </div>
-        <select
-          className="border rounded-lg px-3 py-2 text-sm min-w-[160px]"
-          value={warehouseFilter}
-          onChange={(e) => { setWarehouseFilter(e.target.value); setPage(1); }}
-        >
-          <option value="">全部仓库</option>
-          {warehouses.map((w) => (
-            <option key={w.id} value={w.id}>{w.name}</option>
-          ))}
-        </select>
+        <div>
+          <label htmlFor="warehouse-filter" className="sr-only">仓库筛选</label>
+          <select
+            id="warehouse-filter"
+            className="border rounded-lg px-3 py-2 text-sm min-w-[160px]"
+            value={warehouseFilter}
+            onChange={(e) => { setWarehouseFilter(e.target.value); setPage(1); }}
+          >
+            <option value="">全部仓库</option>
+            {warehouses.map((w) => (
+              <option key={w.id} value={w.id}>{w.name}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div className="bg-white rounded-xl border overflow-hidden">
@@ -314,8 +325,8 @@ export default function Products() {
         <div className="space-y-3">
           <div className="text-sm text-gray-500">商品：{inboundModal?.name}（SKU: {inboundModal?.sku || "-"}）</div>
           <div className="text-sm text-gray-500">当前库存：{inboundModal?.stock_quantity ?? 0}</div>
-          <input className="w-full border rounded-lg p-2 text-sm" type="number" placeholder="入库数量" value={inboundModal?.quantity || 1} onChange={(e) => setInboundModal({ ...inboundModal, quantity: +e.target.value })} />
-          <input className="w-full border rounded-lg p-2 text-sm" type="number" placeholder="入库单价" value={inboundModal?.price || 0} onChange={(e) => setInboundModal({ ...inboundModal, price: +e.target.value })} />
+          <div><label className="block text-sm font-medium text-gray-700 mb-1">入库数量</label><input className="w-full border rounded-lg p-2 text-sm" type="number" value={inboundModal?.quantity || 1} onChange={(e) => setInboundModal({ ...inboundModal, quantity: +e.target.value })} /></div>
+          <div><label className="block text-sm font-medium text-gray-700 mb-1">入库单价</label><input className="w-full border rounded-lg p-2 text-sm" type="number" value={inboundModal?.price || 0} onChange={(e) => setInboundModal({ ...inboundModal, price: +e.target.value })} /></div>
           <button onClick={submitInbound} className="w-full bg-green-500 text-white py-2 rounded-lg font-medium">确认入库</button>
         </div>
       </Modal>
@@ -324,8 +335,8 @@ export default function Products() {
         <div className="space-y-3">
           <div className="text-sm text-gray-500">商品：{outboundModal?.name}（SKU: {outboundModal?.sku || "-"}）</div>
           <div className="text-sm text-gray-500">当前库存：{outboundModal?.stock_quantity ?? 0}</div>
-          <input className="w-full border rounded-lg p-2 text-sm" type="number" placeholder="出库数量" value={outboundModal?.quantity || 1} onChange={(e) => setOutboundModal({ ...outboundModal, quantity: +e.target.value })} />
-          <input className="w-full border rounded-lg p-2 text-sm" type="number" placeholder="出库单价" value={outboundModal?.price || 0} onChange={(e) => setOutboundModal({ ...outboundModal, price: +e.target.value })} />
+          <div><label className="block text-sm font-medium text-gray-700 mb-1">出库数量</label><input className="w-full border rounded-lg p-2 text-sm" type="number" value={outboundModal?.quantity || 1} onChange={(e) => setOutboundModal({ ...outboundModal, quantity: +e.target.value })} /></div>
+          <div><label className="block text-sm font-medium text-gray-700 mb-1">出库单价</label><input className="w-full border rounded-lg p-2 text-sm" type="number" value={outboundModal?.price || 0} onChange={(e) => setOutboundModal({ ...outboundModal, price: +e.target.value })} /></div>
           <button onClick={submitOutbound} className="w-full bg-orange-500 text-white py-2 rounded-lg font-medium">确认出库</button>
         </div>
       </Modal>
@@ -334,8 +345,8 @@ export default function Products() {
         <div className="space-y-3">
           <div className="text-sm text-gray-500">商品：{stockModal?.name}（SKU: {stockModal?.sku || "-"}）</div>
           <div className="text-sm text-gray-500">当前库存：{stockModal?.stock_quantity ?? 0}</div>
-          <input className="w-full border rounded-lg p-2 text-sm" type="number" placeholder="盘点后数量" value={stockModal?.new_quantity ?? 0} onChange={(e) => setStockModal({ ...stockModal, new_quantity: +e.target.value })} />
-          <input className="w-full border rounded-lg p-2 text-sm" placeholder="备注" value={stockModal?.remark || ""} onChange={(e) => setStockModal({ ...stockModal, remark: e.target.value })} />
+          <div><label className="block text-sm font-medium text-gray-700 mb-1">盘点后数量</label><input className="w-full border rounded-lg p-2 text-sm" type="number" value={stockModal?.new_quantity ?? 0} onChange={(e) => setStockModal({ ...stockModal, new_quantity: +e.target.value })} /></div>
+          <div><label className="block text-sm font-medium text-gray-700 mb-1">备注</label><input className="w-full border rounded-lg p-2 text-sm" value={stockModal?.remark || ""} onChange={(e) => setStockModal({ ...stockModal, remark: e.target.value })} /></div>
           <button onClick={submitStockAdjust} className="w-full bg-purple-500 text-white py-2 rounded-lg font-medium">确认调整</button>
         </div>
       </Modal>
@@ -370,7 +381,16 @@ export default function Products() {
           <button onClick={() => setInvoiceDetail(null)} className="px-4 py-2 bg-gray-100 rounded-lg text-sm">关闭</button>
         </div>
       </Modal>
+
+      {/* 导入弹窗 */}
+      <ImportModal
+        open={importModal}
+        onClose={() => setImportModal(false)}
+        templateType="main-data"
+        onImport={(file) => api.importMainData(file)}
+        onSuccess={() => load()}
+        moduleName="商品"
+      />
     </div>
   );
 }
-
