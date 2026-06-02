@@ -51,6 +51,7 @@ from modules.pda_sync import register as reg_pda_sync
 from modules.invoice_bridge import register as reg_invoice_bridge
 from modules.invoice_classifier import register as reg_invoice_classifier
 from modules.master_data import register as reg_master_data
+from modules.backup import register as reg_backup
 
 reg_products(app)
 reg_locations(app)
@@ -71,6 +72,7 @@ reg_pda_sync(app)
 reg_invoice_bridge(app)
 reg_invoice_classifier(app)
 reg_master_data(app)
+reg_backup(app)
 
 
 @app.get("/api/health")

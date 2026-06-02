@@ -1,7 +1,7 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { api } from "../services/api";
 import Modal from "../components/Modal";
-import { Plus, Search, Edit2, Trash2, X } from "lucide-react";
+import { Plus, Search, Edit2, Trash2, X, Download, Upload } from "lucide-react";
 
 type TabKey = "products" | "suppliers" | "employees";
 
@@ -71,6 +71,30 @@ export default function MasterData() {
   const [deleteTarget, setDeleteTarget] = useState<any>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [masterSuppliers, setMasterSuppliers] = useState<any[]>([]);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [importResult, setImportResult] = useState<any>(null);
+
+  const handleExport = () => {
+    if (tab === "products") api.exportMasterProducts();
+    else if (tab === "suppliers") api.exportMasterSuppliers();
+    else api.exportMasterEmployees();
+  };
+
+  const handleImport = async () => {
+    const file = fileRef.current?.files?.[0];
+    if (!file) return;
+    try {
+      let r: any;
+      if (tab === "products") r = await api.uploadMasterProducts(file);
+      else if (tab === "suppliers") r = await api.uploadMasterSuppliers(file);
+      else r = await api.uploadMasterEmployees(file);
+      setImportResult(r);
+      load();
+    } catch (e: any) {
+      setImportResult({ errors: [e?.message || "导入失败"] });
+    }
+    if (fileRef.current) fileRef.current.value = "";
+  };
 
   const emptyForm = {
     products: { name: "", sku: "", spec: "", price: 0, unit: "个", category: "", barcode: "", supplier_id: "" },
@@ -168,9 +192,18 @@ export default function MasterData() {
     <div>
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-bold">📋 基础数据管理</h1>
-        <button onClick={openNew} className="bg-blue-500 text-white px-3 py-2 rounded-lg text-sm flex items-center gap-1">
-          <Plus size={16} /> 新增{TABS.find(t => t.key === tab)?.label}
-        </button>
+        <div className="flex gap-2">
+          <button onClick={handleExport} className="border px-3 py-2 rounded-lg text-sm flex items-center gap-1 text-gray-600">
+            <Download size={16} /> 导出
+          </button>
+          <label className="border px-3 py-2 rounded-lg text-sm flex items-center gap-1 text-green-600 cursor-pointer hover:bg-green-50">
+            <Upload size={16} /> 导入
+            <input ref={fileRef} type="file" accept=".xlsx" className="hidden" onChange={handleImport} />
+          </label>
+          <button onClick={openNew} className="bg-blue-500 text-white px-3 py-2 rounded-lg text-sm flex items-center gap-1">
+            <Plus size={16} /> 新增{TABS.find(t => t.key === tab)?.label}
+          </button>
+        </div>
       </div>
 
       {/* Tab 切换 */}
@@ -247,6 +280,26 @@ export default function MasterData() {
         <div className="flex justify-end">
           <button onClick={() => setErrorMsg(null)} className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm">确定</button>
         </div>
+      </Modal>
+
+      {/* 导入结果 */}
+      <Modal open={importResult !== null} onClose={() => setImportResult(null)} title="导入结果">
+        {importResult && (
+          <div className="space-y-2">
+            <div className="text-sm">
+              <span className="text-gray-500">总计：</span>{importResult.total || 0} 条
+              <span className="text-green-600 ml-4">成功：</span>{importResult.success || 0} 条
+            </div>
+            {importResult.errors?.length > 0 && (
+              <div className="bg-red-50 rounded-lg p-3 max-h-40 overflow-y-auto">
+                {importResult.errors.map((e: string, i: number) => (
+                  <p key={i} className="text-xs text-red-600">{e}</p>
+                ))}
+              </div>
+            )}
+            <button onClick={() => setImportResult(null)} className="w-full bg-blue-500 text-white py-2 rounded-lg text-sm">确定</button>
+          </div>
+        )}
       </Modal>
     </div>
   );

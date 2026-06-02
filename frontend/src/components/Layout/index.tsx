@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Package, ArrowDownToLine, ArrowUpFromLine,
-  Warehouse, Users, FileText, UserCircle, MapPin, Menu, X, QrCode, LogOut
+  Warehouse, Users, FileText, UserCircle, MapPin, Menu, X, QrCode, LogOut, DatabaseBackup
 } from 'lucide-react';
 
 const navItems = [
@@ -17,6 +17,7 @@ const navItems = [
   { path: '/locations', label: '库位', icon: MapPin },
   { path: '/warehouses', label: '仓库', icon: Warehouse },
   { path: '/master-data', label: '基础数据', icon: FileText },
+  { path: '/backup', label: '数据备份', icon: DatabaseBackup },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {

@@ -164,4 +164,45 @@ export const api = {
   createMasterEmployee: (d: any) => req("/master/employees", { method: "POST", body: JSON.stringify(d) }),
   updateMasterEmployee: (id: string, d: any) => req(`/master/employees/${id}`, { method: "PUT", body: JSON.stringify(d) }),
   deleteMasterEmployee: (id: string) => req(`/master/employees/${id}`, { method: "DELETE" }),
+
+  // ─── 基础数据导入导出 ───
+  exportMasterProducts: () => window.open(`${API_BASE}/api/import/export/master-products`, "_blank"),
+  exportMasterSuppliers: () => window.open(`${API_BASE}/api/import/export/master-suppliers`, "_blank"),
+  exportMasterEmployees: () => window.open(`${API_BASE}/api/import/export/master-employees`, "_blank"),
+  uploadMasterProducts: async (file: File) => {
+    const form = new FormData(); form.append("file", file);
+    const res = await fetch(`${API_BASE}/api/import/import/master-products`, { method: "POST", body: form });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  },
+  uploadMasterSuppliers: async (file: File) => {
+    const form = new FormData(); form.append("file", file);
+    const res = await fetch(`${API_BASE}/api/import/import/master-suppliers`, { method: "POST", body: form });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  },
+  uploadMasterEmployees: async (file: File) => {
+    const form = new FormData(); form.append("file", file);
+    const res = await fetch(`${API_BASE}/api/import/import/master-employees`, { method: "POST", body: form });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  },
+
+  // ─── 数据备份 ───
+  backupCreate: () => req("/backup/create", { method: "POST" }),
+  backupList: () => req("/backup/list"),
+  backupDownload: (filename: string) => window.open(`${API_BASE}/api/backup/download/${filename}`, "_blank"),
+  backupDelete: (filename: string) => req(`/backup/${filename}`, { method: "DELETE" }),
+  backupRestore: async (file: File) => {
+    const form = new FormData(); form.append("file", file);
+    const token = localStorage.getItem("wms_token") || localStorage.getItem("auth_token");
+    const res = await fetch(`${API_BASE}/api/backup/restore`, {
+      method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  },
+  backupStats: () => req("/backup/stats"),
 };
