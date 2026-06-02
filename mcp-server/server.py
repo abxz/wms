@@ -25,8 +25,10 @@ WMS MCP Server — Streamable HTTP transport
 
 import asyncio
 import httpx
-from typing import Any
+import logging
 from mcp.server.fastmcp import FastMCP
+
+logger = logging.getLogger("wms-mcp")
 
 # ── 配置 ──────────────────────────────────────────────
 WMS_BASE_URL = "http://localhost:5174"
@@ -61,12 +63,30 @@ def _get_client() -> httpx.AsyncClient:
 
 
 async def _request(method: str, path: str, **kw) -> dict:
-    """统一请求封装，自动处理错误"""
+    """统一请求封装，自动重试，错误脱敏"""
     c = _get_client()
-    resp = await c.request(method, path, **kw)
-    if resp.status_code >= 400:
-        raise RuntimeError(f"WMS API {method} {path} → {resp.status_code}: {resp.text[:500]}")
-    return resp.json()
+    last_err = None
+    for attempt in range(3):
+        try:
+            resp = await c.request(method, path, **kw)
+            if resp.status_code >= 400:
+                # 脱敏：不返回原始错误体中的敏感信息
+                body = resp.text[:200]
+                if any(s in body.lower() for s in ["password", "token", "secret", "key"]):
+                    body = "[REDACTED]"
+                raise RuntimeError(f"WMS API {method} {path} → {resp.status_code}: {body}")
+            return resp.json()
+        except (httpx.ConnectError, httpx.TimeoutException) as e:
+            last_err = e
+            if attempt < 2:
+                await asyncio.sleep(0.5 * (attempt + 1))
+                continue
+            raise RuntimeError(f"WMS API {method} {path} → 连接失败(重试3次): {e}")
+        except RuntimeError:
+            raise
+        except Exception as e:
+            raise RuntimeError(f"WMS API {method} {path} → 未知错误: {type(e).__name__}: {e}")
+    raise RuntimeError(f"WMS API {method} {path} → 重试耗尽: {last_err}")
 
 
 async def _get(path: str, params: dict | None = None) -> dict:
@@ -563,67 +583,67 @@ async def barcode_qrcode_product(product_id: str) -> dict:
 
 @mcp.tool(description="下载主数据导入模板(Excel)")
 async def import_export_template_main_data() -> dict:
-    return await _get("/import-export/template/main-data")
+    return await _get("/import/template/main-data")
 
 
 @mcp.tool(description="下载员工导入模板(Excel)")
 async def import_export_template_employees() -> dict:
-    return await _get("/import-export/template/employees")
+    return await _get("/import/template/employees")
 
 
 @mcp.tool(description="下载订单导入模板(Excel)")
 async def import_export_template_orders() -> dict:
-    return await _get("/import-export/template/orders")
+    return await _get("/import/template/orders")
 
 
 @mcp.tool(description="导出商品数据(Excel)")
 async def import_export_products() -> dict:
-    return await _get("/import-export/export/products")
+    return await _get("/import/export/products")
 
 
 @mcp.tool(description="导出供应商数据(Excel)")
 async def import_export_suppliers() -> dict:
-    return await _get("/import-export/export/suppliers")
+    return await _get("/import/export/suppliers")
 
 
 @mcp.tool(description="导出员工数据(Excel)")
 async def import_export_employees() -> dict:
-    return await _get("/import-export/export/employees")
+    return await _get("/import/export/employees")
 
 
 @mcp.tool(description="导出库存数据(Excel)")
 async def import_export_inventory() -> dict:
-    return await _get("/import-export/export/inventory")
+    return await _get("/import/export/inventory")
 
 
 @mcp.tool(description="导入主数据(Excel)。参数: body(dict) 含 file_path/data 等")
 async def import_export_import_main_data(body: dict) -> dict:
-    return await _post("/import-export/main-data", body)
+    return await _post("/import/main-data", body)
 
 
 @mcp.tool(description="导入员工数据(Excel)。参数: body(dict)")
 async def import_export_import_employees(body: dict) -> dict:
-    return await _post("/import-export/employees", body)
+    return await _post("/import/employees", body)
 
 
 @mcp.tool(description="导入订单数据(Excel)。参数: body(dict)")
 async def import_export_import_orders(body: dict) -> dict:
-    return await _post("/import-export/orders", body)
+    return await _post("/import/orders", body)
 
 
 @mcp.tool(description="导入主数据商品。参数: body(dict)")
 async def import_export_import_master_products(body: dict) -> dict:
-    return await _post("/import-export/import/master-products", body)
+    return await _post("/import/import/master-products", body)
 
 
 @mcp.tool(description="导入主数据供应商。参数: body(dict)")
 async def import_export_import_master_suppliers(body: dict) -> dict:
-    return await _post("/import-export/import/master-suppliers", body)
+    return await _post("/import/import/master-suppliers", body)
 
 
 @mcp.tool(description="导入主数据员工。参数: body(dict)")
 async def import_export_import_master_employees(body: dict) -> dict:
-    return await _post("/import-export/import/master-employees", body)
+    return await _post("/import/import/master-employees", body)
 
 
 # ══════════════════════════════════════════════════════
@@ -661,12 +681,12 @@ async def backup_delete(filename: str) -> dict:
 
 @mcp.tool(description="获取系统配置")
 async def system_config_get() -> dict:
-    return await _get("/system-config/config")
+    return await _get("/system/config")
 
 
 @mcp.tool(description="更新系统配置。参数: body(dict)")
 async def system_config_update(body: dict) -> dict:
-    return await _put("/system-config/config", body)
+    return await _put("/system/config", body)
 
 
 # ══════════════════════════════════════════════════════
@@ -675,77 +695,77 @@ async def system_config_update(body: dict) -> dict:
 
 @mcp.tool(description="主数据-查询商品列表")
 async def master_products_list(page: int = 1, size: int = 20) -> dict:
-    return await _get("/master-data/products", {"page": page, "size": size})
+    return await _get("/master/products", {"page": page, "size": size})
 
 
 @mcp.tool(description="主数据-获取商品详情。参数: product_id")
 async def master_products_get(product_id: str) -> dict:
-    return await _get(f"/master-data/products/{product_id}")
+    return await _get(f"/master/products/{product_id}")
 
 
 @mcp.tool(description="主数据-创建商品。参数: body(dict)")
 async def master_products_create(body: dict) -> dict:
-    return await _post("/master-data/products", body)
+    return await _post("/master/products", body)
 
 
 @mcp.tool(description="主数据-更新商品。参数: product_id, body(dict)")
 async def master_products_update(product_id: str, body: dict) -> dict:
-    return await _put(f"/master-data/products/{product_id}", body)
+    return await _put(f"/master/products/{product_id}", body)
 
 
 @mcp.tool(description="主数据-删除商品。参数: product_id")
 async def master_products_delete(product_id: str) -> dict:
-    return await _delete(f"/master-data/products/{product_id}")
+    return await _delete(f"/master/products/{product_id}")
 
 
 @mcp.tool(description="主数据-查询供应商列表")
 async def master_suppliers_list(page: int = 1, size: int = 20) -> dict:
-    return await _get("/master-data/suppliers", {"page": page, "size": size})
+    return await _get("/master/suppliers", {"page": page, "size": size})
 
 
 @mcp.tool(description="主数据-获取供应商详情。参数: supplier_id")
 async def master_suppliers_get(supplier_id: str) -> dict:
-    return await _get(f"/master-data/suppliers/{supplier_id}")
+    return await _get(f"/master/suppliers/{supplier_id}")
 
 
 @mcp.tool(description="主数据-创建供应商。参数: body(dict)")
 async def master_suppliers_create(body: dict) -> dict:
-    return await _post("/master-data/suppliers", body)
+    return await _post("/master/suppliers", body)
 
 
 @mcp.tool(description="主数据-更新供应商。参数: supplier_id, body(dict)")
 async def master_suppliers_update(supplier_id: str, body: dict) -> dict:
-    return await _put(f"/master-data/suppliers/{supplier_id}", body)
+    return await _put(f"/master/suppliers/{supplier_id}", body)
 
 
 @mcp.tool(description="主数据-删除供应商。参数: supplier_id")
 async def master_suppliers_delete(supplier_id: str) -> dict:
-    return await _delete(f"/master-data/suppliers/{supplier_id}")
+    return await _delete(f"/master/suppliers/{supplier_id}")
 
 
 @mcp.tool(description="主数据-查询员工列表")
 async def master_employees_list(page: int = 1, size: int = 20) -> dict:
-    return await _get("/master-data/employees", {"page": page, "size": size})
+    return await _get("/master/employees", {"page": page, "size": size})
 
 
 @mcp.tool(description="主数据-获取员工详情。参数: employee_id")
 async def master_employees_get(employee_id: str) -> dict:
-    return await _get(f"/master-data/employees/{employee_id}")
+    return await _get(f"/master/employees/{employee_id}")
 
 
 @mcp.tool(description="主数据-创建员工。参数: body(dict)")
 async def master_employees_create(body: dict) -> dict:
-    return await _post("/master-data/employees", body)
+    return await _post("/master/employees", body)
 
 
 @mcp.tool(description="主数据-更新员工。参数: employee_id, body(dict)")
 async def master_employees_update(employee_id: str, body: dict) -> dict:
-    return await _put(f"/master-data/employees/{employee_id}", body)
+    return await _put(f"/master/employees/{employee_id}", body)
 
 
 @mcp.tool(description="主数据-删除员工。参数: employee_id")
 async def master_employees_delete(employee_id: str) -> dict:
-    return await _delete(f"/master-data/employees/{employee_id}")
+    return await _delete(f"/master/employees/{employee_id}")
 
 
 # ══════════════════════════════════════════════════════
@@ -754,52 +774,52 @@ async def master_employees_delete(employee_id: str) -> dict:
 
 @mcp.tool(description="查询劳保用品列表")
 async def labor_supplies_list(page: int = 1, size: int = 20) -> dict:
-    return await _get("/labor-protection/supplies", {"page": page, "size": size})
+    return await _get("/labor/supplies", {"page": page, "size": size})
 
 
 @mcp.tool(description="查询所有劳保用品(不分页)")
 async def labor_supplies_all() -> dict:
-    return await _get("/labor-protection/supplies/all")
+    return await _get("/labor/supplies/all")
 
 
 @mcp.tool(description="查询低库存劳保用品")
 async def labor_supplies_low_stock() -> dict:
-    return await _get("/labor-protection/supplies/low-stock")
+    return await _get("/labor/supplies/low-stock")
 
 
-@mcp.tool(description="创建劳保用品。参数: body(dict)")
+@mcp.tool(description("创建劳保用品。参数: body(dict)"))
 async def labor_supplies_create(body: dict) -> dict:
-    return await _post("/labor-protection/supplies", body)
+    return await _post("/labor/supplies", body)
 
 
-@mcp.tool(description="更新劳保用品。参数: supply_id, body(dict)")
+@mcp.tool(description("更新劳保用品。参数: supply_id, body(dict)"))
 async def labor_supplies_update(supply_id: str, body: dict) -> dict:
-    return await _put(f"/labor-protection/supplies/{supply_id}", body)
+    return await _put(f"/labor/supplies/{supply_id}", body)
 
 
-@mcp.tool(description="删除劳保用品。参数: supply_id")
+@mcp.tool(description("删除劳保用品。参数: supply_id"))
 async def labor_supplies_delete(supply_id: str) -> dict:
-    return await _delete(f"/labor-protection/supplies/{supply_id}")
+    return await _delete(f"/labor/supplies/{supply_id}")
 
 
-@mcp.tool(description="按岗位查劳保配置。参数: position")
+@mcp.tool(description("按岗位查劳保配置。参数: position"))
 async def labor_configs_by_position(position: str) -> dict:
-    return await _get(f"/labor-protection/configs/position/{position}")
+    return await _get(f"/labor/configs/position/{position}")
 
 
-@mcp.tool(description="查询待发放列表")
+@mcp.tool(description("查询待发放列表"))
 async def labor_pending() -> dict:
-    return await _get("/labor-protection/pending")
+    return await _get("/labor/pending")
 
 
-@mcp.tool(description="发放劳保用品。参数: body(dict)")
+@mcp.tool(description("发放劳保用品。参数: body(dict)"))
 async def labor_distribute(body: dict) -> dict:
-    return await _post("/labor-protection/distribute", body)
+    return await _post("/labor/distribute", body)
 
 
-@mcp.tool(description="查询发放记录列表")
+@mcp.tool(description("查询发放记录列表"))
 async def labor_distributions() -> dict:
-    return await _get("/labor-protection/distributions")
+    return await _get("/labor/distributions")
 
 
 # ══════════════════════════════════════════════════════
@@ -841,12 +861,12 @@ async def stock_mutations_list(page: int = 1, size: int = 20) -> dict:
 
 @mcp.tool(description="批量同步 PDA 数据。参数: body(dict)")
 async def pda_sync_batch(body: dict) -> dict:
-    return await _post("/pda-sync/sync/batch", body)
+    return await _post("/pda/sync/batch", body)
 
 
 @mcp.tool(description="查询 PDA 同步状态")
 async def pda_sync_status() -> dict:
-    return await _get("/pda-sync/sync/status")
+    return await _get("/pda/sync/status")
 
 
 # ══════════════════════════════════════════════════════
@@ -886,12 +906,14 @@ async def health_check() -> dict:
 def main():
     """Streamable HTTP 模式启动"""
     import os
+    import logging
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(levelname)s %(message)s")
     host = os.environ.get("MCP_HOST", "0.0.0.0")
     port = int(os.environ.get("MCP_PORT", "5175"))
     mcp.settings.host = host
     mcp.settings.port = port
     mcp.settings.streamable_http_path = "/mcp"
-    print(f"[WMS MCP] Starting on {host}:{port}/mcp (streamable-http)")
+    logger.info(f"Starting on {host}:{port}/mcp (streamable-http), WMS backend: {WMS_BASE_URL}")
     mcp.run(transport="streamable-http")
 
 
