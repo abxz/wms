@@ -9,12 +9,20 @@ export interface Product {
   barcode: string;
   supplier_id: string;
   location_id: string;
+  warehouse_id?: string;
   min_stock: number;
   max_stock: number;
   remark: string;
   active: boolean;
+  spec?: string;
+  qr_uuid?: string;
   created_at?: string;
   updated_at?: string;
+  // 聚合字段（后端动态计算）
+  stock_quantity?: number;
+  warehouse_name?: string;
+  location_code?: string;
+  status?: string;
 }
 
 export interface Inventory {

@@ -6,7 +6,7 @@ import { Product } from "../types";
 
 const API_BASE = (window as any).__WMS_API_BASE__ || window.location.origin;
 
-function QrImage({ qrUuid }: { qrUuid: string }) {
+function QrImage({ qrUuid }: { qrUuid?: string }) {
   const [src, setSrc] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -20,7 +20,7 @@ function QrImage({ qrUuid }: { qrUuid: string }) {
         "Content-Type": "application/json",
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
-      body: JSON.stringify({ data: qrUuid }),
+      body: JSON.stringify({ text: qrUuid }),
       signal: controller.signal,
     })
       .then((r) => {
@@ -70,9 +70,13 @@ export default function QrCodes() {
           filename: `${item.name}-${item.sku || item.id}`,
         }));
       if (payload.length === 0) { setErrorModal("没有可生成的二维码"); setBatchLoading(false); return; }
+      const token = localStorage.getItem("wms_token") || localStorage.getItem("auth_token");
       const res = await fetch(`${API_BASE}/api/barcode/qrcode/batch`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({ items: payload }),
       });
       if (!res.ok) throw new Error("批量生成失败");
@@ -87,6 +91,30 @@ export default function QrCodes() {
       setErrorModal(e.message || "批量下载失败");
     } finally {
       setBatchLoading(false);
+    }
+  };
+
+  const downloadSingle = async (qrUuid: string, name: string) => {
+    try {
+      const token = localStorage.getItem("wms_token") || localStorage.getItem("auth_token");
+      const res = await fetch(`${API_BASE}/api/barcode/qrcode`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ text: qrUuid }),
+      });
+      if (!res.ok) throw new Error("生成失败");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `qrcode-${name}.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e: any) {
+      setErrorModal(e.message || "二维码下载失败");
     }
   };
 
@@ -136,6 +164,15 @@ export default function QrCodes() {
                     {item.created_at ? new Date(item.created_at).toLocaleDateString("zh-CN") : ""}
                   </p>
                 </div>
+                {item.qr_uuid && (
+                  <button
+                    onClick={() => downloadSingle(item.qr_uuid!, item.name)}
+                    className="text-blue-500 hover:text-blue-700 p-1"
+                    title="下载二维码"
+                  >
+                    <Download size={16} />
+                  </button>
+                )}
               </div>
             ))}
             {items.length === 0 && <p className="text-center text-gray-400 py-8">暂无数据</p>}

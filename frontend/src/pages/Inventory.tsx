@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../services/api";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Download } from "lucide-react";
 import { Inventory as InventoryItem, InventoryAlert } from '../types';
 
 export default function Inventory() {
@@ -31,7 +31,10 @@ export default function Inventory() {
 
   return (
     <div>
-      <h1 className="text-xl font-bold mb-4">🏭 库存管理</h1>
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-xl font-bold">🏭 库存管理</h1>
+        <button onClick={() => api.exportInventory()} className="border px-3 py-2 rounded-lg text-sm flex items-center gap-1 text-gray-600"><Download size={16} /> 导出</button>
+      </div>
 
       <div className="flex gap-2 mb-4">
         <button onClick={() => setTab("all")} className={`px-4 py-2 rounded-lg text-sm ${tab === "all" ? "bg-blue-500 text-white" : "bg-gray-100"}`}>全部 ({items.length})</button>

@@ -5,7 +5,7 @@ from core.utils import generate_id, generate_order_no
 from modules.inventory.service import update_stock
 from datetime import datetime
 
-FILE = "inbound.json"
+FILE = "inbound"
 SEARCH_FIELDS = ["order_no", "supplier_id", "status"]
 
 def _ts():

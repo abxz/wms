@@ -4,6 +4,7 @@ from fastapi.responses import Response
 import io, os, json
 import qrcode
 import sys
+from urllib.parse import quote
 # 先导入pip包，再加路径避免命名冲突
 _barcode_pkg = __import__('barcode')
 from barcode.writer import ImageWriter
@@ -28,7 +29,12 @@ def generate_barcode(body: dict):
         code128 = _barcode_pkg.get("code128", text, writer=ImageWriter())
         buf = io.BytesIO()
         code128.write(buf)
-        return Response(content=buf.getvalue(), media_type="image/png")
+        safe_text = quote(text, safe='')[:50]
+        return Response(
+            content=buf.getvalue(),
+            media_type="image/png",
+            headers={"Content-Disposition": f"attachment; filename*=UTF-8''{safe_text}.png"},
+        )
     except Exception as e:
         raise HTTPException(500, f"条码生成失败: {e}")
 
@@ -43,7 +49,12 @@ def generate_qrcode(body: dict):
         img = qrcode.make(text, image_factory=PilImage)
         buf = io.BytesIO()
         img.save(buf, format="PNG")
-        return Response(content=buf.getvalue(), media_type="image/png")
+        safe_text = quote(text, safe='')[:50]
+        return Response(
+            content=buf.getvalue(),
+            media_type="image/png",
+            headers={"Content-Disposition": f"attachment; filename*=UTF-8''{safe_text}.png"},
+        )
     except Exception as e:
         raise HTTPException(500, f"二维码生成失败: {e}")
 
@@ -85,22 +96,33 @@ def generate_qrcode_batch(body: dict):
 
 
 @router.post("/qrcode/product/{pid}")
-def generate_product_qrcode(pid: str):
-    """生成单个商品二维码（含商品信息）"""
-    product = get_by_id("products.json", pid)
+def generate_product_qrcode(pid: str, body: dict = {}):
+    """生成单个商品二维码"""
+    product = get_by_id("products", pid)
     if not product:
         raise HTTPException(404, "商品不存在")
     try:
-        qr_text = f"{product['name']}|{product.get('sku','')}|{pid}"
+        size = body.get("size", 300) if isinstance(body, dict) else 300
+        qr_text = product.get("barcode") or product.get("sku") or pid
         if len(qr_text) > 2048:
-            qr_text = f"{product.get('sku', pid)}|{pid}"[:2048]
-        img = qrcode.make(qr_text, image_factory=PilImage)
+            qr_text = qr_text[:2048]
+        qr = qrcode.QRCode(version=None, error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=10, border=4)
+        qr.add_data(qr_text)
+        qr.make(fit=True)
+        img = qr.make_image(image_factory=PilImage)
         buf = io.BytesIO()
         img.save(buf, format="PNG")
+        filename = (product.get("name") or product.get("sku") or pid).replace('"', '')
+        # RFC 5987 encoding for non-ASCII filenames
+        from urllib.parse import quote
+        safe_filename = quote(filename, safe='')[:80]
         return Response(
             content=buf.getvalue(),
             media_type="image/png",
-            headers={"Content-Disposition": f"attachment; filename={product.get('sku', pid)}.png"}
+            headers={
+                "Content-Disposition": f"attachment; filename=\"qrcode.png\"; filename*=UTF-8''{safe_filename}.png",
+                "Access-Control-Expose-Headers": "Content-Disposition",
+            },
         )
     except Exception as e:
         raise HTTPException(500, f"二维码生成失败: {e}")

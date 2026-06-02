@@ -4,8 +4,8 @@ from modules.employees.model import Employee, ClaimRecord
 from core.utils import generate_id
 from datetime import datetime
 
-EMPFILE = "employees.json"
-CLAIMFILE = "claims.json"
+EMPFILE = "employees"
+CLAIMFILE = "claims"
 SEARCH_FIELDS = ["name", "employee_no", "department", "role"]
 
 def list_employees(page=1, size=20, search=""):

@@ -4,8 +4,8 @@ from modules.outbound.model import OutboundOrder
 from core.utils import generate_id, generate_order_no
 from datetime import datetime
 
-OUTFILE = "outbound.json"
-INVFILE = "inventory.json"
+OUTFILE = "outbound"
+INVFILE = "inventory"
 SEARCH_FIELDS = ["order_no", "type", "status"]
 
 def _ts():

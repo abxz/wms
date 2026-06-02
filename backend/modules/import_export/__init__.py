@@ -252,3 +252,69 @@ def download_order_template():
     buf.seek(0)
     return StreamingResponse(buf, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                              headers={"Content-Disposition": "attachment; filename=order_template.xlsx"})
+
+
+# ═══════════════════════════════════════════════════════════════
+# 导出
+# ═══════════════════════════════════════════════════════════════
+
+def _excel_response(wb, filename: str):
+    from io import BytesIO
+    from fastapi.responses import StreamingResponse
+    buf = BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return StreamingResponse(buf,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"})
+
+
+@router.get("/export/products")
+def export_products():
+    import openpyxl
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "商品"
+    ws.append(["ID","SKU","名称","规格","分类","单位","单价","条码","供应商ID","仓库ID","最低库存","最高库存","备注"])
+    for p in prod_svc.get_all_products():
+        ws.append([p.get(k,"") for k in ["id","sku","name","spec","category","unit","price","barcode","supplier_id","warehouse_id","min_stock","max_stock","remark"]])
+    return _excel_response(wb, "products.xlsx")
+
+
+@router.get("/export/suppliers")
+def export_suppliers():
+    import openpyxl
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "供应商"
+    ws.append(["ID","名称","联系人","电话","地址","备注"])
+    for s in sup_svc.get_all_suppliers():
+        ws.append([s.get(k,"") for k in ["id","name","contact","phone","address","remark"]])
+    return _excel_response(wb, "suppliers.xlsx")
+
+
+@router.get("/export/employees")
+def export_employees():
+    import openpyxl
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "员工"
+    ws.append(["ID","姓名","工号","部门","角色","月度额度","已用额度"])
+    for e in emp_svc.list_employees(size=9999).get("items", []):
+        ws.append([e.get(k,"") for k in ["id","name","employee_no","department","role","monthly_quota","monthly_used"]])
+    return _excel_response(wb, "employees.xlsx")
+
+
+@router.get("/export/inventory")
+def export_inventory():
+    import openpyxl
+    from core.database import all_
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "库存"
+    ws.append(["商品ID","商品名称","库位ID","数量","更新时间"])
+    products = {p["id"]: p["name"] for p in prod_svc.get_all_products()}
+    for inv in all_("inventory"):
+        ws.append([inv.get("product_id",""), products.get(inv.get("product_id",""),""),
+                   inv.get("location_id",""), inv.get("quantity",0), inv.get("updated_at","")])
+    return _excel_response(wb, "inventory.xlsx")

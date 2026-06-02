@@ -2,7 +2,7 @@
 from core.database import all_, get_by_id, add, update, delete, paginate
 from core.utils import generate_id
 
-FILE = "warehouses.json"
+FILE = "warehouses"
 SEARCH_FIELDS = ["name", "code", "address"]
 
 
@@ -34,7 +34,7 @@ def update_warehouse(wid: str, data: dict) -> dict | None:
 
 def delete_warehouse(wid: str) -> bool:
     """删除仓库前检查是否有商品引用"""
-    products = all_("products.json")
+    products = all_("products")
     refs = [p for p in products if p.get("warehouse_id") == wid]
     if refs:
         names = ", ".join(p.get("name", "?") for p in refs[:5])

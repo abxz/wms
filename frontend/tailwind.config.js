@@ -8,9 +8,9 @@ module.exports = {
     extend: {
       colors: {
         wms: {
-          primary: '#1e40af',
-          'primary-dark': '#1e3a8a',
-          secondary: '#3b82f6',
+          primary: '#7c3aed',
+          'primary-dark': '#6d28d9',
+          secondary: '#8b5cf6',
           accent: '#06b6d4',
           success: '#10b981',
           warning: '#f59e0b',

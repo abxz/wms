@@ -15,7 +15,7 @@ def route_list(page: int = Query(1, ge=1), size: int = Query(20, ge=1, le=100), 
 def usage_history():
     """返回所有历史使用地点（去重+按频率排序），供 Combobox 使用"""
     from core.database import all_
-    data = all_("outbound.json")
+    data = all_("outbound")
     locations = {}
     for d in data:
         loc = d.get("usage_location", "").strip()

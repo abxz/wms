@@ -3,7 +3,7 @@ from core.database import all_, get_by_id, add, update, delete, paginate
 from modules.suppliers.model import Supplier
 from core.utils import generate_id
 
-FILE = "suppliers.json"
+FILE = "suppliers"
 SEARCH_FIELDS = ["name", "contact", "phone"]
 
 def list_suppliers(page=1, size=20, search=""):

@@ -25,8 +25,8 @@ app.add_middleware(
 # JWT认证中间件（保护PDAPI接口）
 app.add_middleware(JWTAuthMiddleware)
 
-# 审计日志中间件
-app.add_middleware(AuditLogMiddleware)
+# 审计日志中间件（暂禁用 — BaseHTTPMiddleware嵌套导致HTTP状态码异常）
+# app.add_middleware(AuditLogMiddleware)
 
 # 初始化加密模块
 init_crypto()
@@ -49,6 +49,7 @@ from modules.stock_mutations import register as reg_mutations
 from modules.import_export import register as reg_import
 from modules.pda_sync import register as reg_pda_sync
 from modules.invoice_bridge import register as reg_invoice_bridge
+from modules.invoice_classifier import register as reg_invoice_classifier
 
 reg_products(app)
 reg_locations(app)
@@ -67,8 +68,25 @@ reg_mutations(app)
 reg_import(app)
 reg_pda_sync(app)
 reg_invoice_bridge(app)
+reg_invoice_classifier(app)
 
 
 @app.get("/api/health")
 def health():
     return {"status": "ok", "version": "2.1"}
+
+@app.get("/api/debug/jwt-hash")
+def debug_jwt_hash():
+    import hashlib
+    from middleware.jwt_auth import JWT_SECRET
+    return {"hash": hashlib.sha256(JWT_SECRET.encode()).hexdigest()[:12]}
+
+@app.get("/api/debug/verify-token")
+def debug_verify(token: str = ""):
+    from middleware.jwt_auth import JWT_SECRET
+    from jose import jwt, JWTError
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+        return {"valid": True, "payload": payload}
+    except JWTError as e:
+        return {"valid": False, "error": str(e)}

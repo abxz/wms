@@ -22,7 +22,7 @@ async function req<T = any>(path: string, options?: RequestInit): Promise<T> {
 
 export const api = {
   // ─── 商品 ───
-  getProducts: (p = 1, s = "", pg = 20) => req(`/products?page=${p}&size=${pg}&search=${encodeURIComponent(s)}`),
+  getProducts: (p = 1, s = "", pg = 20, warehouseId = "") => req(`/products?page=${p}&size=${pg}&search=${encodeURIComponent(s)}${warehouseId ? `&warehouse_id=${warehouseId}` : ""}`),
   getProduct: (id: string) => req(`/products/${id}`),
   getProductInvoice: (id: string) => req(`/products/${id}/invoice`),
   createProduct: (d: any) => req("/products", { method: "POST", body: JSON.stringify(d) }),
@@ -36,13 +36,13 @@ export const api = {
   deleteLocation: (id: string) => req(`/locations/${id}`, { method: "DELETE" }),
 
   // ─── 供应商 ───
-  getSuppliers: () => req("/suppliers"),
+  getSuppliers: (search = "") => req(`/suppliers?search=${encodeURIComponent(search)}`),
   createSupplier: (d: any) => req("/suppliers", { method: "POST", body: JSON.stringify(d) }),
   updateSupplier: (id: string, d: any) => req(`/suppliers/${id}`, { method: "PUT", body: JSON.stringify(d) }),
   deleteSupplier: (id: string) => req(`/suppliers/${id}`, { method: "DELETE" }),
 
   // ─── 员工 ───
-  getEmployees: () => req("/employees"),
+  getEmployees: (search = "") => req(`/employees?search=${encodeURIComponent(search)}`),
   getEmployee: (id: string) => req(`/employees/${id}`),
   createEmployee: (d: any) => req("/employees", { method: "POST", body: JSON.stringify(d) }),
   updateEmployee: (id: string, d: any) => req(`/employees/${id}`, { method: "PUT", body: JSON.stringify(d) }),
@@ -98,6 +98,12 @@ export const api = {
   getEmailConfig: () => req('/invoice-collector/email/config'),
   setEmailConfig: (cfg: any) => req('/invoice-collector/email/config', { method: 'POST', body: JSON.stringify(cfg) }),
 
+  // ─── 导出 ───
+  exportProducts: () => window.open(`${API_BASE}/api/import/export/products`, "_blank"),
+  exportSuppliers: () => window.open(`${API_BASE}/api/import/export/suppliers`, "_blank"),
+  exportEmployees: () => window.open(`${API_BASE}/api/import/export/employees`, "_blank"),
+  exportInventory: () => window.open(`${API_BASE}/api/import/export/inventory`, "_blank"),
+
   // ─── 面板 ───
   getDashboard: () => req("/dashboard/summary"),
   getTrends: () => req("/dashboard/trends"),
@@ -109,16 +115,27 @@ export const api = {
   deleteWarehouse: (id: string) => req(`/warehouses/${id}`, { method: "DELETE" }),
 
   // ─── 二维码 ───
-  getProductQR: (pid: string) => req(`/barcode/qrcode/product/${pid}`),
-  // ...batchQR...
-  // ─── PDA 认证 ───
-  pdaLogin: (qr: string) => req("/auth/pda-login", { method: "POST", body: JSON.stringify({ qr_code: qr }) }),
-  pdaLogout: (token: string) => req("/auth/pda-logout", { method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }),
-  pdaVerify: (token: string) => req("/auth/pda-verify", { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }),
+  getProductQR: async (pid: string) => {
+    const token = localStorage.getItem("wms_token") || localStorage.getItem("auth_token");
+    const res = await fetch(`${API_BASE}/api/barcode/qrcode/product/${pid}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ size: 300, format: "png" }),
+    });
+    if (!res.ok) throw new Error("二维码生成失败");
+    return res.blob();
+  },
   batchQR: async (items: { qr_text: string; filename: string }[]) => {
+    const token = localStorage.getItem("wms_token") || localStorage.getItem("auth_token");
     const res = await fetch(`${API_BASE}/api/barcode/qrcode/batch`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
       body: JSON.stringify({ items }),
     });
     if (!res.ok) throw new Error("二维码生成失败");
@@ -130,4 +147,7 @@ export const api = {
     a.click();
     URL.revokeObjectURL(url);
   },
+  pdaLogin: (qr: string) => req("/auth/pda-login", { method: "POST", body: JSON.stringify({ qr_code: qr }) }),
+  pdaLogout: (token: string) => req("/auth/pda-logout", { method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }),
+  pdaVerify: (token: string) => req("/auth/pda-verify", { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }),
 };

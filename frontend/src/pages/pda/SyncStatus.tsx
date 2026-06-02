@@ -76,7 +76,7 @@ export default function PdaSyncStatus() {
         const result = await res.json();
         // 清除已同步项
         const remaining = items.filter(
-          (_, i) => result.results[i]?.status !== "synced"
+          (_: any, i: number) => result.results[i]?.status !== "synced"
         );
         localStorage.setItem("pda_sync_queue", JSON.stringify(remaining));
         loadStatus();

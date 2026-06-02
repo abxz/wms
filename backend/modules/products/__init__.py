@@ -10,8 +10,13 @@ def register(app):
 
 
 @router.get("")
-def route_list(page: int = Query(1, ge=1), size: int = Query(20, ge=1, le=100), search: str = ""):
-    return svc.list_products(page, size, search)
+def route_list(
+    page: int = Query(1, ge=1),
+    size: int = Query(20, ge=1, le=100),
+    search: str = "",
+    warehouse_id: str = Query("", description="按仓库ID筛选"),
+):
+    return svc.list_products(page, size, search, warehouse_id=warehouse_id)
 
 
 @router.get("/{pid}")
@@ -51,6 +56,6 @@ def route_product_invoice(pid: str):
     inv_number = p.get("invoice_number", "")
     if not inv_number:
         return {"invoice": None, "siblings": []}
-    invoice = next((i for i in all_("invoices.json") if i.get("invoice_number") == inv_number), None)
+    invoice = next((i for i in all_("invoices") if i.get("invoice_number") == inv_number), None)
     siblings = [x for x in svc.get_all_products() if x.get("invoice_number") == inv_number and x["id"] != pid]
     return {"invoice": invoice, "siblings": siblings}
