@@ -92,7 +92,7 @@ async def _delete(path: str) -> dict:
 @mcp.tool(description="WMS 用户登录，获取 JWT token。成功后自动设置后续请求的认证头。参数: username, password")
 async def auth_login(username: str, password: str) -> dict:
     global _token, _client
-    resp = await _request("POST", "/login", json={"username": username, "password": password})
+    resp = await _request("POST", "/auth/login", json={"username": username, "password": password})
     _token = resp.get("token") or resp.get("access_token", "")
     if _token:
         # 重建 client 带上新 token
