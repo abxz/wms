@@ -7,9 +7,13 @@ class Employee(BaseModel):
     name: str
     employee_no: str = ""
     department: str = ""
-    role: str = "claimer"           # super_admin | admin | claimer（新加）
-    qr_code: str = ""               # QR-EMP-{id}
-    qr_image_path: str = ""         # 二维码图片路径（新加）
+    position: str = ""               # 岗位
+    role: str = "claimer"            # super_admin | admin | claimer
+    education: str = ""              # 学历
+    id_card: str = ""                # 身份证号
+    address: str = ""                # 地址
+    qr_code: str = ""                # QR-EMP-{id}
+    qr_image_path: str = ""          # 二维码图片路径
     monthly_quota: float = 1000
     monthly_used: float = 0
     active: bool = True

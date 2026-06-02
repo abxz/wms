@@ -11,6 +11,12 @@ def register(app):
 def route_list(page: int = Query(1, ge=1), size: int = Query(20, ge=1, le=100), search: str = ""):
     return svc.list_employees(page, size, search)
 
+
+@router.get("/next-no")
+def route_next_no(position: str = Query("", description="岗位")):
+    """预览指定岗位的下一个员工编号"""
+    return {"employee_no": svc.generate_employee_no(position)}
+
 @router.get("/{eid}")
 def route_get(eid: str):
     emp = svc.get_employee(eid)

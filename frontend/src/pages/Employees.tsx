@@ -22,7 +22,7 @@ export default function Employees() {
   const [modal, setModal] = useState(false);
   const [editing, setEditing] = useState<Employee | null>(null);
   const [claimModal, setClaimModal] = useState(false);
-  const [form, setForm] = useState({ name: "", department: "", monthly_quota: 1000, role: "claimer" });
+  const [form, setForm] = useState({ name: "", department: "", position: "", education: "", id_card: "", address: "", monthly_quota: 1000, role: "claimer" });
   const [claim, setClaim] = useState({ employee_id: "", product_id: "", quantity: 1 });
   const [claimEmployees, setClaimEmployees] = useState<any[]>([]);
   const [claimProducts, setClaimProducts] = useState<any[]>([]);
@@ -36,7 +36,7 @@ export default function Employees() {
 
   const openNew = () => {
     setEditing(null);
-    setForm({ name: "", department: "", monthly_quota: 1000, role: "claimer" });
+    setForm({ name: "", department: "", position: "", education: "", id_card: "", address: "", monthly_quota: 1000, role: "claimer" });
     setModal(true);
   };
   const openEdit = (item: Employee) => {
@@ -44,6 +44,10 @@ export default function Employees() {
     setForm({
       name: item.name || "",
       department: item.department || "",
+      position: (item as any).position || "",
+      education: (item as any).education || "",
+      id_card: (item as any).id_card || "",
+      address: (item as any).address || "",
       monthly_quota: item.monthly_quota || 1000,
       role: (item as any).role || "claimer",
     });
@@ -55,7 +59,7 @@ export default function Employees() {
       else await api.createEmployee(form);
       setModal(false);
       setEditing(null);
-      setForm({ name: "", department: "", monthly_quota: 1000, role: "claimer" });
+      setForm({ name: "", department: "", position: "", education: "", id_card: "", address: "", monthly_quota: 1000, role: "claimer" });
       load();
     } catch (e: any) {
       setErrorMessage(e.message || "保存失败");
@@ -150,14 +154,50 @@ export default function Employees() {
 
       <Modal open={modal} onClose={() => setModal(false)} title={editing ? "编辑员工" : "新增员工"}>
         <div className="space-y-3">
-          <input className="w-full border rounded-lg p-2 text-sm" placeholder="姓名 *" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
-          <input className="w-full border rounded-lg p-2 text-sm" placeholder="部门" value={form.department} onChange={e => setForm({ ...form, department: e.target.value })} />
-          <input className="w-full border rounded-lg p-2 text-sm" type="number" placeholder="月度配额" value={form.monthly_quota} onChange={e => setForm({ ...form, monthly_quota: +e.target.value })} />
-          <select className="w-full border rounded-lg p-2 text-sm" value={form.role} onChange={e => setForm({ ...form, role: e.target.value })}>
-            <option value="claimer">领料员</option>
-            <option value="admin">管理员</option>
-            <option value="super_admin">超级管理员</option>
-          </select>
+          <div><label className="block text-sm font-medium text-gray-700 mb-1">姓名 *</label><input className="w-full border rounded-lg p-2 text-sm" placeholder="请输入姓名" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
+          <div className="grid grid-cols-2 gap-3">
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">部门</label><input className="w-full border rounded-lg p-2 text-sm" placeholder="所属部门" value={form.department} onChange={e => setForm({ ...form, department: e.target.value })} /></div>
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">岗位</label>
+              <select className="w-full border rounded-lg p-2 text-sm" value={form.position} onChange={e => setForm({ ...form, position: e.target.value })}>
+                <option value="">选择岗位</option>
+                <option value="爆破工">爆破工</option>
+                <option value="电工">电工</option>
+                <option value="仓管员">仓管员</option>
+                <option value="主管">主管</option>
+                <option value="安全员">安全员</option>
+                <option value="司机">司机</option>
+                <option value="搬运工">搬运工</option>
+                <option value="维修工">维修工</option>
+                <option value="化验员">化验员</option>
+                <option value="管理员">管理员</option>
+              </select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">学历</label>
+              <select className="w-full border rounded-lg p-2 text-sm" value={form.education} onChange={e => setForm({ ...form, education: e.target.value })}>
+                <option value="">选择学历</option>
+                <option value="初中">初中</option>
+                <option value="高中">高中</option>
+                <option value="大专">大专</option>
+                <option value="本科">本科</option>
+                <option value="硕士">硕士</option>
+                <option value="博士">博士</option>
+              </select>
+            </div>
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">身份证号</label><input className="w-full border rounded-lg p-2 text-sm" placeholder="18位身份证号" value={form.id_card} onChange={e => setForm({ ...form, id_card: e.target.value })} /></div>
+          </div>
+          <div><label className="block text-sm font-medium text-gray-700 mb-1">地址</label><input className="w-full border rounded-lg p-2 text-sm" placeholder="家庭住址" value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} /></div>
+          <div className="grid grid-cols-2 gap-3">
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">月度配额</label><input className="w-full border rounded-lg p-2 text-sm" type="number" placeholder="1000" value={form.monthly_quota} onChange={e => setForm({ ...form, monthly_quota: +e.target.value })} /></div>
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">角色</label>
+              <select className="w-full border rounded-lg p-2 text-sm" value={form.role} onChange={e => setForm({ ...form, role: e.target.value })}>
+                <option value="claimer">领料员</option>
+                <option value="admin">管理员</option>
+                <option value="super_admin">超级管理员</option>
+              </select>
+            </div>
+          </div>
           <button onClick={save} className="w-full bg-blue-500 text-white py-2 rounded-lg font-medium">{editing ? "保存修改" : "创建"}</button>
         </div>
       </Modal>

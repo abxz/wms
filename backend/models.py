@@ -59,7 +59,11 @@ class Employee(Base):
     name = Column(String(128), nullable=False)
     employee_no = Column(String(32), default="")
     department = Column(String(64), default="")
+    position = Column(String(64), default="")  # 岗位
     role = Column(String(32), default="claimer")
+    education = Column(String(32), default="")  # 学历
+    id_card = Column(String(18), default="")  # 身份证号
+    address = Column(String(256), default="")  # 地址
     qr_code = Column(String(64), default="")
     qr_image_path = Column(String(256), default="")
     monthly_quota = Column(Float, default=1000)

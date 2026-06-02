@@ -45,6 +45,7 @@ export const api = {
   // ─── 员工 ───
   getEmployees: (search = "") => req(`/employees?search=${encodeURIComponent(search)}`),
   getEmployee: (id: string) => req(`/employees/${id}`),
+  getNextEmployeeNo: (position: string) => req(`/employees/next-no?position=${encodeURIComponent(position)}`),
   createEmployee: (d: any) => req("/employees", { method: "POST", body: JSON.stringify(d) }),
   updateEmployee: (id: string, d: any) => req(`/employees/${id}`, { method: "PUT", body: JSON.stringify(d) }),
   deleteEmployee: (id: string) => req(`/employees/${id}`, { method: "DELETE" }),
