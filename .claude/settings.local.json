@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(npx vite *)",
+      "Bash(python3 -c \"import sys; sys.path.insert\\(0,'.'\\); from models import *; print\\('models OK'\\)\")",
+      "Bash(pip show *)",
+      "Bash(python3 -c \"import sys; sys.path.insert\\(0,'.'\\); import models; print\\('models OK'\\)\")",
+      "Bash(pip3 list *)",
+      "Bash(python3 -c \"import ast; ast.parse\\(open\\('/root/projects/warehouse-wms/backend/modules/auth/__init__.py'\\).read\\(\\)\\); print\\('OK'\\)\")",
+      "Bash(python3 -c \"import ast; ast.parse\\(open\\('/root/projects/warehouse-wms/backend/middleware/jwt_auth.py'\\).read\\(\\)\\); print\\('OK'\\)\")",
+      "Bash(python3 -c \"import ast; ast.parse\\(open\\('/root/projects/warehouse-wms/backend/modules/import_export/__init__.py'\\).read\\(\\)\\); print\\('OK'\\)\")",
+      "Bash(python3 *)",
+      "Bash(grep -v 'CONFIG_FILE\\\\|SYNC_LOG\\\\|classifier_config\\\\|collector_config\\\\|#\\\\|\\\\.json\"\\\\s*$')"
+    ]
+  }
+}

@@ -77,7 +77,7 @@ export default function Products() {
     setModal(true);
   };
 
-  const downloadQR = async (id: string) => {
+  const downloadQR = async (id: string, name: string) => {
     try {
       const blob = await api.getProductQR(id);
       const url = URL.createObjectURL(blob);
@@ -345,3 +345,4 @@ export default function Products() {
     </div>
   );
 }
+

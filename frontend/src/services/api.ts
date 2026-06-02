@@ -22,7 +22,7 @@ async function req<T = any>(path: string, options?: RequestInit): Promise<T> {
 
 export const api = {
   // ─── 商品 ───
-  getProducts: (p = 1, s = "", pg = 20) => req(`/products?page=${p}&size=${pg}&search=${encodeURIComponent(s)}`),
+  getProducts: (p = 1, s = "", pg = 20, warehouseId = "") => req(`/products?page=${p}&size=${pg}&search=${encodeURIComponent(s)}${warehouseId ? `&warehouse_id=${warehouseId}` : ""}`),
   getProduct: (id: string) => req(`/products/${id}`),
   getProductInvoice: (id: string) => req(`/products/${id}/invoice`),
   createProduct: (d: any) => req("/products", { method: "POST", body: JSON.stringify(d) }),
@@ -115,16 +115,27 @@ export const api = {
   deleteWarehouse: (id: string) => req(`/warehouses/${id}`, { method: "DELETE" }),
 
   // ─── 二维码 ───
-  getProductQR: (pid: string) => req(`/barcode/qrcode/product/${pid}`),
-  // ...batchQR...
-  // ─── PDA 认证 ───
-  pdaLogin: (qr: string) => req("/auth/pda-login", { method: "POST", body: JSON.stringify({ qr_code: qr }) }),
-  pdaLogout: (token: string) => req("/auth/pda-logout", { method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }),
-  pdaVerify: (token: string) => req("/auth/pda-verify", { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }),
+  getProductQR: async (pid: string) => {
+    const token = localStorage.getItem("wms_token") || localStorage.getItem("auth_token");
+    const res = await fetch(`${API_BASE}/api/barcode/qrcode/product/${pid}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ size: 300, format: "png" }),
+    });
+    if (!res.ok) throw new Error("二维码生成失败");
+    return res.blob();
+  },
   batchQR: async (items: { qr_text: string; filename: string }[]) => {
+    const token = localStorage.getItem("wms_token") || localStorage.getItem("auth_token");
     const res = await fetch(`${API_BASE}/api/barcode/qrcode/batch`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
       body: JSON.stringify({ items }),
     });
     if (!res.ok) throw new Error("二维码生成失败");
@@ -136,4 +147,7 @@ export const api = {
     a.click();
     URL.revokeObjectURL(url);
   },
+  pdaLogin: (qr: string) => req("/auth/pda-login", { method: "POST", body: JSON.stringify({ qr_code: qr }) }),
+  pdaLogout: (token: string) => req("/auth/pda-logout", { method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }),
+  pdaVerify: (token: string) => req("/auth/pda-verify", { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }),
 };

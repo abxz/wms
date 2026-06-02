@@ -163,6 +163,8 @@ class Warehouse(Base):
     address = Column(Text, default="")
     contact = Column(String(64), default="")
     phone = Column(String(32), default="")
+    capacity = Column(Integer, default=0)
+    status = Column(String(32), default="active")
     active = Column(Boolean, default=True)
     remark = Column(Text, default="")
     created_at = Column(String(32), default="")
@@ -187,6 +189,7 @@ class SystemConfig(Base):
     id = Column(String(32), primary_key=True)
     key = Column(String(64), nullable=False, unique=True)
     value = Column(Text, default="")
+    created_at = Column(String(32), default="")
     updated_at = Column(String(32), default="")
 
 
