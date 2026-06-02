@@ -36,13 +36,13 @@ export const api = {
   deleteLocation: (id: string) => req(`/locations/${id}`, { method: "DELETE" }),
 
   // ─── 供应商 ───
-  getSuppliers: () => req("/suppliers"),
+  getSuppliers: (search = "") => req(`/suppliers?search=${encodeURIComponent(search)}`),
   createSupplier: (d: any) => req("/suppliers", { method: "POST", body: JSON.stringify(d) }),
   updateSupplier: (id: string, d: any) => req(`/suppliers/${id}`, { method: "PUT", body: JSON.stringify(d) }),
   deleteSupplier: (id: string) => req(`/suppliers/${id}`, { method: "DELETE" }),
 
   // ─── 员工 ───
-  getEmployees: () => req("/employees"),
+  getEmployees: (search = "") => req(`/employees?search=${encodeURIComponent(search)}`),
   getEmployee: (id: string) => req(`/employees/${id}`),
   createEmployee: (d: any) => req("/employees", { method: "POST", body: JSON.stringify(d) }),
   updateEmployee: (id: string, d: any) => req(`/employees/${id}`, { method: "PUT", body: JSON.stringify(d) }),
@@ -97,6 +97,12 @@ export const api = {
   // 邮箱配置
   getEmailConfig: () => req('/invoice-collector/email/config'),
   setEmailConfig: (cfg: any) => req('/invoice-collector/email/config', { method: 'POST', body: JSON.stringify(cfg) }),
+
+  // ─── 导出 ───
+  exportProducts: () => window.open(`${API_BASE}/api/import/export/products`, "_blank"),
+  exportSuppliers: () => window.open(`${API_BASE}/api/import/export/suppliers`, "_blank"),
+  exportEmployees: () => window.open(`${API_BASE}/api/import/export/employees`, "_blank"),
+  exportInventory: () => window.open(`${API_BASE}/api/import/export/inventory`, "_blank"),
 
   // ─── 面板 ───
   getDashboard: () => req("/dashboard/summary"),

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../services/api";
 import Modal from "../components/Modal";
-import { Plus, Edit2, Trash2, ShoppingCart, Search } from "lucide-react";
+import { Plus, Edit2, Trash2, ShoppingCart, Search, Download } from "lucide-react";
 import { Employee } from '../types';
 
 const ROLE_LABELS: Record<string, string> = {
@@ -50,12 +50,17 @@ export default function Employees() {
     setModal(true);
   };
   const save = async () => {
-    if (editing) await api.updateEmployee(editing.id, form);
-    else await api.createEmployee(form);
-    setModal(false);
-    setEditing(null);
-    setForm({ name: "", department: "", monthly_quota: 1000, role: "claimer" });
-    load();
+    try {
+      if (editing) await api.updateEmployee(editing.id, form);
+      else await api.createEmployee(form);
+      setModal(false);
+      setEditing(null);
+      setForm({ name: "", department: "", monthly_quota: 1000, role: "claimer" });
+      load();
+    } catch (e: any) {
+      setErrorMessage(e.message || "保存失败");
+      setErrorModal(true);
+    }
   };
   const confirmDelete = (id: string) => {
     setPendingDeleteId(id);
@@ -88,6 +93,7 @@ export default function Employees() {
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-bold">👤 员工管理</h1>
         <div className="flex gap-2">
+          <button onClick={() => api.exportEmployees()} className="border px-3 py-2 rounded-lg text-sm flex items-center gap-1 text-gray-600"><Download size={16} /> 导出</button>
           <button onClick={openClaim} className="bg-green-500 text-white px-3 py-2 rounded-lg text-sm flex items-center gap-1"><ShoppingCart size={16} /> 领用</button>
           <button onClick={openNew} className="bg-blue-500 text-white px-3 py-2 rounded-lg text-sm flex items-center gap-1"><Plus size={16} /> 新增</button>
         </div>

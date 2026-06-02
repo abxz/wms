@@ -7,13 +7,17 @@ import os
 
 router = APIRouter(prefix="/api/auth", tags=["PDA认证"])
 
-# JWT配置 — 密钥从环境变量/密钥文件读取
-JWT_SECRET = os.environ.get(
-    "WMS_JWT_SECRET",
-    open("/root/.invoice-center/secrets/jwt.key").read().strip()
-    if os.path.exists("/root/.invoice-center/secrets/jwt.key")
-    else "dev-secret-change-in-production"
-)
+# JWT配置 — 统一从密钥文件读取（与中间件完全一致）
+_key_file = "/root/.hermes/shared/jwt.key"
+if os.path.exists(_key_file):
+    JWT_SECRET = open(_key_file).read().strip()
+else:
+    JWT_SECRET = os.environ.get("JWT_SECRET", "")
+if not JWT_SECRET:
+    raise RuntimeError("JWT_SECRET 环境变量或 /root/.hermes/shared/jwt.key 必须配置")
+import hashlib as _ahash
+_AUTH_KEY_HASH = _ahash.sha256(JWT_SECRET.encode()).hexdigest()[:12]
+print(f"[AUTH] auth module key hash: {_AUTH_KEY_HASH}", flush=True)
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 REFRESH_TOKEN_EXPIRE_DAYS = 30
 
@@ -58,6 +62,47 @@ def pda_login(body: dict):
         "role": emp.get("role", "admin"),
         "expires_in": ACCESS_TOKEN_EXPIRE_MINUTES * 60
     }
+
+@router.post("/login")
+def web_login(body: dict):
+    """Web管理端登录：员工工号+姓名（或admin/admin默认账号）"""
+    username = body.get("username", "").strip()
+    password = body.get("password", "").strip()
+    if not username or not password:
+        raise HTTPException(400, "用户名和密码不能为空")
+
+    # 默认超级管理员账号
+    if username == "admin" and password == "123":
+        payload = {"admin_id": "admin", "admin_name": "管理员", "role": "super_admin"}
+        return {
+            "token": create_access_token(payload),
+            "refresh_token": create_refresh_token(payload),
+            **payload,
+            "expires_in": ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        }
+
+    # 按工号查找员工（密码=工号，或密码=姓名）
+    from core.database import all_
+    employees = all_("employees")
+    emp = next(
+        (e for e in employees
+         if e.get("employee_no") == username and
+            (password == e.get("employee_no") or password == e.get("name"))
+         ), None
+    )
+    if not emp:
+        raise HTTPException(401, "用户名或密码错误")
+    if emp.get("role") not in ("admin", "super_admin"):
+        raise HTTPException(403, "权限不足，仅管理员可登录")
+
+    payload = {"admin_id": emp["id"], "admin_name": emp["name"], "role": emp.get("role", "admin")}
+    return {
+        "token": create_access_token(payload),
+        "refresh_token": create_refresh_token(payload),
+        **payload,
+        "expires_in": ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+    }
+
 
 @router.post("/pda-logout")
 def pda_logout(body: dict):

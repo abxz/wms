@@ -142,7 +142,7 @@ def route_auto_match(body: dict):
     """发票自动匹配WMS入库单（简化版：按供应商名匹配）"""
     invoice = body.get("invoice", {})
     from core.database import all_
-    inbounds = all_("inbound.json")
+    inbounds = all_("inbound")
     seller_name = invoice.get("seller_name", "")
     amount = float(invoice.get("total_amount", 0) or 0)
     matches = []

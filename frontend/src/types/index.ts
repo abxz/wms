@@ -9,12 +9,21 @@ export interface Product {
   barcode: string;
   supplier_id: string;
   location_id: string;
+  warehouse_id: string;
   min_stock: number;
   max_stock: number;
   remark: string;
   active: boolean;
+  spec?: string;
+  qr_uuid?: string;
+  invoice_number?: string;
   created_at?: string;
   updated_at?: string;
+  // 聚合字段（商品列表页显示）
+  stock_quantity?: number;    // 剩余库存
+  warehouse_name?: string;    // 存仓仓库名称
+  location_code?: string;     // 库位编码
+  status?: string;            // 状态：上架/下架/缺货
 }
 
 export interface Inventory {
@@ -77,27 +86,26 @@ export interface Supplier {
 
 export interface Invoice {
   id: string;
-  invoice_number: string;       // 发票号码（后端字段）
-  invoice_code: string;         // 发票代码
-  invoice_type: string;         // 数电票/专票/普票
-  issue_date: string;           // 开票日期
-  total_amount: number;         // 价税合计
-  tax_amount: number;           // 税额
-  seller_name: string;          // 销售方名称
-  seller_tax_no: string;        // 销方税号
-  buyer_name: string;           // 购买方名称
-  buyer_tax_no: string;         // 购方税号
-  file_path: string;            // 原文件路径
-  file_hash: string;            // SHA256
-  source: string;               // upload/email/feishu/batch
-  status: string;               // pending/reconciled/duplicate
-  confidence: number;           // 解析置信度 0-100
-  wms_inbound_id: string;       // 关联WMS入库单ID
-  supplier_id: string;          // 关联供应商ID
+  invoice_number: string;
+  invoice_code: string;
+  invoice_type: string;
+  issue_date: string;
+  total_amount: number;
+  tax_amount: number;
+  seller_name: string;
+  seller_tax_no: string;
+  buyer_name: string;
+  buyer_tax_no: string;
+  file_path: string;
+  file_hash: string;
+  source: string;
+  status: string;
+  confidence: number;
+  wms_inbound_id: string;
+  supplier_id: string;
   remark: string;
   created_at?: string;
   updated_at?: string;
-  // 兼容旧字段（过渡期保留）
   invoice_no?: string;
   amount?: number;
   inbound_order_id?: string;
@@ -122,6 +130,21 @@ export interface Location {
   area: string;
   description: string;
   created_at?: string;
+}
+
+export interface Warehouse {
+  id: string;
+  name: string;
+  code: string;
+  address: string;
+  contact: string;
+  phone: string;
+  capacity: number;
+  status: string;
+  active: boolean;
+  remark: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface DashboardSummary {

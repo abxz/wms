@@ -1,5 +1,5 @@
 """审计日志中间件 — 自动记录所有API操作"""
-from fastapi import Request
+from fastapi import Request, HTTPException
 from starlette.middleware.base import BaseHTTPMiddleware
 from datetime import datetime
 import json
@@ -29,6 +29,8 @@ class AuditLogMiddleware(BaseHTTPMiddleware):
         try:
             response = await call_next(request)
             entry["status_code"] = response.status_code
+        except HTTPException:
+            raise  # FastAPI HTTP异常直接透传，不吞状态码
         except Exception as exc:
             entry["status_code"] = 500
             entry["error"] = str(exc)

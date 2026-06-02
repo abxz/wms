@@ -4,7 +4,7 @@ from modules.inventory.model import Inventory
 from core.utils import generate_id
 from datetime import datetime
 
-FILE = "inventory.json"
+FILE = "inventory"
 SEARCH_FIELDS = ["product_id", "location_id"]
 
 def _ts():
@@ -22,7 +22,7 @@ def get_inventory_by_location(lid: str):
 def get_alerts(threshold=None):
     """获取库存预警：低于商品 min_stock 或超过 max_stock"""
     data = all_(FILE)
-    products = {p["id"]: p for p in all_("products.json")}
+    products = {p["id"]: p for p in all_("products")}
     alerts = []
     for inv in data:
         pid = inv.get("product_id", "")

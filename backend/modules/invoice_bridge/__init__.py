@@ -1,5 +1,5 @@
 """发票中心桥接层 — 通过HTTP转发请求到独立发票中心"""
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 from middleware.jwt_auth import JWTAuthMiddleware
 import httpx
 import os
@@ -29,31 +29,44 @@ def require_auth():
     return _check
 
 
-async def _forward(method: str, path: str, body: dict = None):
+async def _forward(method: str, path: str, body: dict = None, headers: dict = None):
     try:
+        req_headers = {"Content-Type": "application/json"}
+        if headers:
+            req_headers.update(headers)
         async with httpx.AsyncClient(timeout=10) as client:
-            resp = await client.request(method, f"{INVOICE_API}{path}", json=body)
+            resp = await client.request(method, f"{INVOICE_API}{path}", json=body, headers=req_headers)
             return resp.json()
     except Exception as e:
         raise HTTPException(502, f"发票中心不可达: {e}")
 
 
+def _get_auth_header(request):
+    """从请求中提取 Authorization header"""
+    return {"Authorization": request.headers.get("Authorization", "")}
+
+
 @router.post("/reconcile")
-async def reconcile(body: dict, _=Depends(require_auth)):
+async def reconcile(body: dict, request: Request, _=Depends(require_auth)):
     return await _forward("POST", f"/parser/invoices/{body.get('invoice_number')}/reconcile",
-                          {"inbound_id": body.get("inbound_id")})
+                          {"inbound_id": body.get("inbound_id")}, _get_auth_header(request))
 
 
 @router.post("/audit")
-async def audit(body: dict, _=Depends(require_auth)):
-    return await _forward("POST", "/wms-bridge/audit", body)
+async def audit(body: dict, request: Request, _=Depends(require_auth)):
+    return await _forward("POST", "/wms-bridge/audit", body, _get_auth_header(request))
 
 
 @router.post("/audit/fix")
-async def audit_fix(body: dict, _=Depends(require_auth)):
-    return await _forward("POST", "/wms-bridge/audit/fix", body)
+async def audit_fix(body: dict, request: Request, _=Depends(require_auth)):
+    return await _forward("POST", "/wms-bridge/audit/fix", body, _get_auth_header(request))
 
 
 @router.post("/auto-match")
-async def auto_match(body: dict, _=Depends(require_auth)):
-    return await _forward("POST", "/wms-bridge/auto-match", body)
+async def auto_match(body: dict, request: Request, _=Depends(require_auth)):
+    return await _forward("POST", "/wms-bridge/auto-match", body, _get_auth_header(request))
+
+
+@router.post("/parse")
+async def parse(body: dict, request: Request, _=Depends(require_auth)):
+    return await _forward("POST", "/parser/parse", body, _get_auth_header(request))

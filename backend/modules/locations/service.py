@@ -3,7 +3,7 @@ from core.database import all_, get_by_id, add, update, delete, paginate
 from modules.locations.model import Location
 from core.utils import generate_id
 
-FILE = "locations.json"
+FILE = "locations"
 SEARCH_FIELDS = ["code", "area", "description"]
 
 def list_locations(page=1, size=20, search=""):

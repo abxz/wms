@@ -87,7 +87,7 @@ def generate_qrcode_batch(body: dict):
 @router.post("/qrcode/product/{pid}")
 def generate_product_qrcode(pid: str):
     """生成单个商品二维码（含商品信息）"""
-    product = get_by_id("products.json", pid)
+    product = get_by_id("products", pid)
     if not product:
         raise HTTPException(404, "商品不存在")
     try:

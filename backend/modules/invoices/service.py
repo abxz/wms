@@ -11,7 +11,7 @@ import hashlib
 import shutil
 from pathlib import Path
 
-FILE = "invoices.json"
+FILE = "invoices"
 SEARCH_FIELDS = ["invoice_number", "invoice_code", "seller_name", "buyer_name"]
 UPLOAD_DIR = DATA_DIR / "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -197,8 +197,8 @@ def audit_invoices() -> dict:
     from core.database import all_
     try:
         invoices = all_(FILE)
-        products = all_("products.json")
-        inbounds = all_("inbound.json")
+        products = all_("products")
+        inbounds = all_("inbound")
     except Exception as e:
         return {"discrepancies": [], "total": 0, "error": str(e)}
     inbound_map = {ib["id"]: ib for ib in inbounds}
@@ -240,6 +240,6 @@ def apply_audit_fix(fixes: list) -> dict:
         field = fix.get("field")
         value = fix.get("value")
         if pid and field in _AUDIT_FIX_ALLOWED_FIELDS and value is not None:
-            update("products.json", pid, {field: value})
+            update("products", pid, {field: value})
             applied += 1
     return {"applied": applied}

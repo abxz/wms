@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../services/api";
 import Modal from "../components/Modal";
-import { Plus, Edit2, Trash2 } from "lucide-react";
+import { Plus, Edit2, Trash2, Download } from "lucide-react";
 import { Supplier } from '../types';
 
 export default function Suppliers() {
@@ -59,7 +59,10 @@ export default function Suppliers() {
     <div>
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-bold">👥 供应商</h1>
-        <button onClick={openNew} className="bg-blue-500 text-white px-3 py-2 rounded-lg text-sm flex items-center gap-1"><Plus size={16} /> 新增</button>
+        <div className="flex gap-2">
+          <button onClick={() => api.exportSuppliers()} className="border px-3 py-2 rounded-lg text-sm flex items-center gap-1 text-gray-600"><Download size={16} /> 导出</button>
+          <button onClick={openNew} className="bg-blue-500 text-white px-3 py-2 rounded-lg text-sm flex items-center gap-1"><Plus size={16} /> 新增</button>
+        </div>
       </div>
       <div className="space-y-2">
         {items.map((item: any) => (

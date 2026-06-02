@@ -26,12 +26,16 @@ export default function Locations() {
     setModal(true);
   };
   const save = async () => {
-    if (editing) await api.updateLocation(editing.id, form);
-    else await api.createLocation(form);
-    setModal(false);
-    setEditing(null);
-    setForm({ code: "", area: "", description: "" });
-    load();
+    try {
+      if (editing) await api.updateLocation(editing.id, form);
+      else await api.createLocation(form);
+      setModal(false);
+      setEditing(null);
+      setForm({ code: "", area: "", description: "" });
+      load();
+    } catch (e: any) {
+      alert(e.message || "保存失败");
+    }
   };
   const confirmDelete = (id: string) => {
     setPendingDeleteId(id);

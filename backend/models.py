@@ -30,7 +30,10 @@ class Location(Base):
     __tablename__ = "locations"
     id = Column(String(32), primary_key=True)
     code = Column(String(64), nullable=False)
+    name = Column(String(128), default="")
     area = Column(String(64), default="")
+    warehouse_id = Column(String(32), default="")
+    zone = Column(String(32), default="")
     description = Column(Text, default="")
     active = Column(Boolean, default=True)
     created_at = Column(String(32), default="")
@@ -84,6 +87,7 @@ class Inventory(Base):
     product_id = Column(String(32), nullable=False)
     quantity = Column(Float, default=0)
     location_id = Column(String(32), default="")
+    created_at = Column(String(32), default="")
     updated_at = Column(String(32), default="")
 
 
