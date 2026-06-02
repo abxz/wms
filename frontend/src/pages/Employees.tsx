@@ -246,18 +246,18 @@ export default function Employees() {
     }
   }, [form.position, surname, givenName, editing, fetchPreviewNo]);
 
-  const openNew = () => {
+  const openNew = async () => {
     setEditing(null);
-    loadConfigs();
+    await loadConfigs();
     setSurname("");
     setGivenName("");
     setPreviewNo("");
     setForm({ name: "", department: "", position: "", job_type: "", education: "", id_card: "", address: "", monthly_quota: 1000, role: "claimer" });
     setModal(true);
   };
-  const openEdit = (item: Employee) => {
+  const openEdit = async (item: Employee) => {
     setEditing(item);
-    loadConfigs();
+    await loadConfigs();
     const fullName = item.name || "";
     setSurname(fullName ? fullName[0] : "");
     setGivenName(fullName.length > 1 ? fullName.slice(1) : "");
