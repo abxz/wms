@@ -20,9 +20,36 @@ const POSITIONS = ["爆破工", "电工", "仓管员", "主管", "安全员", "�
 
 export default function LaborProtection() {
   const [tab, setTab] = useState<TabKey>("supplies");
+  const [lowStock, setLowStock] = useState<any[]>([]);
+
+  useEffect(() => {
+    loadLowStock();
+    const interval = setInterval(loadLowStock, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const loadLowStock = async () => {
+    try {
+      const res = await api.laborLowStock();
+      setLowStock(res || []);
+    } catch {}
+  };
+
   return (
     <div className="space-y-4">
-      {/* Tab栏 */}
+      {lowStock.length > 0 && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+          <div className="flex items-start gap-2">
+            <AlertTriangle size={18} className="text-red-600 mt-0.5" />
+            <div className="flex-1">
+              <div className="font-semibold text-red-800 text-sm">库存警告</div>
+              <div className="text-xs text-red-600 mt-1">
+                以下用品库存不足：{lowStock.map(s => `${s.name}(${s.current_stock})`).join('、')}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="flex gap-1 bg-slate-100 rounded-xl p-1 overflow-x-auto">
         {TABS.map(t => (
           <button key={t.key} onClick={() => setTab(t.key)}
@@ -33,7 +60,7 @@ export default function LaborProtection() {
           </button>
         ))}
       </div>
-      {tab === "supplies" && <SuppliesTab />}
+      {tab === "supplies" && <SuppliesTab onStockUpdate={loadLowStock} />}
       {tab === "configs" && <ConfigsTab />}
       {tab === "pending" && <PendingTab />}
       {tab === "distributions" && <DistributionsTab />}
@@ -46,13 +73,13 @@ export default function LaborProtection() {
    用品目录 Tab
    ═══════════════════════════════════════════════════════════════════════════════ */
 
-function SuppliesTab() {
+function SuppliesTab({ onStockUpdate }: any) {
   const [data, setData] = useState<any>({ items: [], total: 0, page: 1 });
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [showModal, setShowModal] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  const [form, setForm] = useState<any>({ name: "", category: "头部防护", spec: "", unit: "个", default_cycle_months: 12, gb_ref: "GB 39800.1-2020", remark: "" });
+  const [form, setForm] = useState<any>({ name: "", category: "头部防护", spec: "", unit: "个", default_cycle_months: 12, gb_ref: "GB 39800.1-2020", current_stock: 0, warning_threshold: 10, remark: "" });
 
   const load = useCallback(async () => {
     const res = await api.laborSupplies(page, 20, search);
@@ -63,13 +90,13 @@ function SuppliesTab() {
 
   const openNew = () => {
     setEditId(null);
-    setForm({ name: "", category: "头部防护", spec: "", unit: "个", default_cycle_months: 12, gb_ref: "GB 39800.1-2020", remark: "" });
+    setForm({ name: "", category: "头部防护", spec: "", unit: "个", default_cycle_months: 12, gb_ref: "GB 39800.1-2020", current_stock: 0, warning_threshold: 10, remark: "" });
     setShowModal(true);
   };
 
   const openEdit = (item: any) => {
     setEditId(item.id);
-    setForm({ name: item.name, category: item.category, spec: item.spec, unit: item.unit, default_cycle_months: item.default_cycle_months, gb_ref: item.gb_ref, remark: item.remark });
+    setForm({ name: item.name, category: item.category, spec: item.spec, unit: item.unit, default_cycle_months: item.default_cycle_months, gb_ref: item.gb_ref, current_stock: item.current_stock || 0, warning_threshold: item.warning_threshold || 10, remark: item.remark });
     setShowModal(true);
   };
 
@@ -79,6 +106,7 @@ function SuppliesTab() {
     else await api.laborSupplyCreate(form);
     setShowModal(false);
     load();
+    onStockUpdate?.();
   };
 
   const del = async (id: string) => {
@@ -119,8 +147,9 @@ function SuppliesTab() {
               <th className="text-left px-3 py-2.5">分类</th>
               <th className="text-left px-3 py-2.5">规格</th>
               <th className="text-left px-3 py-2.5">单位</th>
+              <th className="text-left px-3 py-2.5">库存</th>
+              <th className="text-left px-3 py-2.5">预警</th>
               <th className="text-left px-3 py-2.5">周期(月)</th>
-              <th className="text-left px-3 py-2.5">国标</th>
               <th className="text-right px-3 py-2.5">操作</th>
             </tr>
           </thead>
@@ -133,8 +162,13 @@ function SuppliesTab() {
                 </td>
                 <td className="px-3 py-2 text-slate-500">{s.spec || "-"}</td>
                 <td className="px-3 py-2">{s.unit}</td>
+                <td className="px-3 py-2">
+                  <span className={s.current_stock < s.warning_threshold ? "text-red-600 font-semibold" : ""}>
+                    {s.current_stock || 0}
+                  </span>
+                </td>
+                <td className="px-3 py-2 text-slate-500">{s.warning_threshold || 10}</td>
                 <td className="px-3 py-2">{s.default_cycle_months}</td>
-                <td className="px-3 py-2 text-slate-400 text-xs">{s.gb_ref || "-"}</td>
                 <td className="px-3 py-2 text-right">
                   <button onClick={() => openEdit(s)} className="text-slate-400 hover:text-blue-600 p-1"><Edit2 size={15} /></button>
                   <button onClick={() => del(s.id)} className="text-slate-400 hover:text-red-600 p-1 ml-1"><Trash2 size={15} /></button>
@@ -142,7 +176,7 @@ function SuppliesTab() {
               </tr>
             ))}
             {!data.items?.length && (
-              <tr><td colSpan={7} className="text-center py-12 text-slate-400">暂无数据，点击"初始化国标"导入默认劳保用品</td></tr>
+              <tr><td colSpan={8} className="text-center py-12 text-slate-400">暂无数据，点击"初始化国标"导入默认劳保用品</td></tr>
             )}
           </tbody>
         </table>
@@ -176,6 +210,12 @@ function SuppliesTab() {
                 <input className="w-full border rounded-lg p-2 text-sm" value={form.spec} onChange={e => setForm({ ...form, spec: e.target.value })} placeholder="如：V型" /></div>
               <div><label className="block text-sm font-medium text-gray-700 mb-1">周期(月)</label>
                 <input className="w-full border rounded-lg p-2 text-sm" type="number" min={1} value={form.default_cycle_months} onChange={e => setForm({ ...form, default_cycle_months: +e.target.value })} /></div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">当前库存</label>
+                <input className="w-full border rounded-lg p-2 text-sm" type="number" min={0} value={form.current_stock} onChange={e => setForm({ ...form, current_stock: +e.target.value })} /></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">预警阈值</label>
+                <input className="w-full border rounded-lg p-2 text-sm" type="number" min={0} value={form.warning_threshold} onChange={e => setForm({ ...form, warning_threshold: +e.target.value })} /></div>
             </div>
             <div><label className="block text-sm font-medium text-gray-700 mb-1">国标参考</label>
               <input className="w-full border rounded-lg p-2 text-sm" value={form.gb_ref} onChange={e => setForm({ ...form, gb_ref: e.target.value })} placeholder="GB 39800.1-2020" /></div>
@@ -331,23 +371,44 @@ function PendingTab() {
   const [positionFilter, setPositionFilter] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [selected, setSelected] = useState<any>(null);
+  const [supplies, setSupplies] = useState<any[]>([]);
 
   const load = async () => {
-    const res = await api.laborPending(positionFilter);
+    const [res, sups] = await Promise.all([api.laborPending(positionFilter), api.laborSuppliesAll()]);
     setItems(res);
+    setSupplies(sups);
   };
 
   useEffect(() => { load(); }, [positionFilter]);
 
   const distribute = async () => {
     if (!selected) return;
-    await api.laborDistribute({
-      employee_id: selected.employee_id,
-      supply_id: selected.supply_id,
-      quantity: selected.qty_per_cycle,
-    });
-    setShowModal(false);
-    load();
+    const supply = supplies.find(s => s.id === selected.supply_id);
+    if (supply?.current_stock <= 0) {
+      alert("库存不足，无法发放");
+      return;
+    }
+    try {
+      await api.laborDistribute({
+        employee_id: selected.employee_id,
+        supply_id: selected.supply_id,
+        quantity: selected.qty_per_cycle,
+      });
+      setShowModal(false);
+      load();
+    } catch (e: any) {
+      alert(e.message || "发放失败");
+    }
+  };
+
+  const getDaysEarly = (planned: string) => {
+    if (!planned) return 0;
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const p = new Date(planned);
+      const t = new Date(today);
+      return Math.floor((p.getTime() - t.getTime()) / 86400000);
+    } catch { return 0; }
   };
 
   const statusColor = (days: number) => {
@@ -422,12 +483,36 @@ function PendingTab() {
       {showModal && selected && (
         <Modal open={showModal} onClose={() => setShowModal(false)} title="确认发放">
           <div className="space-y-3">
-            <div className="bg-slate-50 rounded-lg p-3 space-y-1 text-sm">
-              <p><span className="text-slate-500">员工：</span>{selected.employee_name} ({selected.employee_no})</p>
-              <p><span className="text-slate-500">岗位：</span>{selected.position}</p>
-              <p><span className="text-slate-500">用品：</span>{selected.supply_name}</p>
-              <p><span className="text-slate-500">数量：</span>{selected.qty_per_cycle}</p>
-            </div>
+            {(() => {
+              const daysEarly = getDaysEarly(selected.next_date);
+              const supply = supplies.find(s => s.id === selected.supply_id);
+              return (
+                <>
+                  {daysEarly > 0 && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start gap-2">
+                      <AlertTriangle size={16} className="text-amber-600 mt-0.5" />
+                      <div className="text-sm text-amber-800">
+                        <div className="font-semibold">提前领取警告</div>
+                        <div className="mt-1">此员工将提前 {daysEarly} 天领取，确认继续？</div>
+                      </div>
+                    </div>
+                  )}
+                  {supply && supply.current_stock <= 0 && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
+                      <AlertTriangle size={16} className="text-red-600 mt-0.5" />
+                      <div className="text-sm text-red-800 font-semibold">库存为0，无法发放</div>
+                    </div>
+                  )}
+                  <div className="bg-slate-50 rounded-lg p-3 space-y-1 text-sm">
+                    <p><span className="text-slate-500">员工：</span>{selected.employee_name} ({selected.employee_no})</p>
+                    <p><span className="text-slate-500">岗位：</span>{selected.position}</p>
+                    <p><span className="text-slate-500">用品：</span>{selected.supply_name}</p>
+                    <p><span className="text-slate-500">数量：</span>{selected.qty_per_cycle}</p>
+                    {supply && <p><span className="text-slate-500">当前库存：</span>{supply.current_stock}</p>}
+                  </div>
+                </>
+              );
+            })()}
             <div className="flex justify-end gap-2 pt-2">
               <button onClick={() => setShowModal(false)} className="px-4 py-2 border rounded-lg text-sm">取消</button>
               <button onClick={distribute} className="px-4 py-2 bg-violet-600 text-white rounded-lg text-sm hover:bg-violet-700">确认发放</button>

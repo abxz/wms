@@ -12,6 +12,8 @@ class LaborSupply(BaseModel):
     unit: str = "个"                    # 单位
     default_cycle_months: int = 12      # 默认发放周期（月）
     gb_ref: str = ""                    # 国标参考（如 GB 39800.1-2020）
+    current_stock: int = 0
+    warning_threshold: int = 10
     remark: str = ""
     active: bool = True
     created_at: str = ""

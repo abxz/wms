@@ -53,6 +53,7 @@ from modules.invoice_classifier import register as reg_invoice_classifier
 from modules.master_data import register as reg_master_data
 from modules.backup import register as reg_backup
 from modules.labor_protection import register as reg_labor
+from modules.notifications import register as reg_notifications
 
 reg_products(app)
 reg_locations(app)
@@ -75,6 +76,7 @@ reg_invoice_classifier(app)
 reg_master_data(app)
 reg_backup(app)
 reg_labor(app)
+reg_notifications(app)
 
 
 @app.get("/api/health")

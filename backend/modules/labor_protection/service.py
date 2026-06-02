@@ -37,6 +37,12 @@ def list_all_supplies():
     return all_(SUPPLY_TABLE)
 
 
+def get_low_stock_supplies() -> list[dict]:
+    """返回库存低于预警阈值的用品"""
+    return [s for s in all_(SUPPLY_TABLE)
+            if s.get("active") and s.get("current_stock", 0) < s.get("warning_threshold", 10)]
+
+
 # ── 岗位配置 ──────────────────────────────────────────────────────────────────
 
 def list_configs(page=1, size=20, search=""):
@@ -110,6 +116,11 @@ def distribute(body: dict) -> dict:
     if not supply:
         raise ValueError("劳保用品不存在")
 
+    # 检查库存
+    current_stock = supply.get("current_stock", 0)
+    if current_stock <= 0:
+        raise ValueError("库存不足，当前库存为0")
+
     position = emp.get("position", "")
     now = datetime.now()
     actual_date = now.date().isoformat()
@@ -126,10 +137,24 @@ def distribute(body: dict) -> dict:
     if last:
         planned_date = last.get("next_date", actual_date)
     else:
-        planned_date = actual_date  # 首次领取，应领时间=实际时间
+        planned_date = actual_date
 
     # 计算下次应领取日期
     next_date = calc_next_date(actual_date, cycle_months)
+
+    # 扣减 current_stock
+    new_stock = max(0, current_stock - int(qty))
+    update(SUPPLY_TABLE, supply_id, {"current_stock": new_stock})
+
+    # 库存预警通知
+    warning_threshold = supply.get("warning_threshold", 10)
+    if new_stock < warning_threshold:
+        from modules.notifications.service import create_notification
+        create_notification(
+            "库存警告",
+            f"库存不足：{supply.get('name', '')}",
+            f"当前库存 {new_stock} {supply.get('unit', '')}，低于预警阈值 {warning_threshold}",
+        )
 
     # 扣减库存（如果该用品关联了商品）
     linked_product_id = supply.get("linked_product_id", "")

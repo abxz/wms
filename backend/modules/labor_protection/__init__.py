@@ -114,3 +114,8 @@ def distribute(body: dict):
 def get_pending(position: str = Query("", description="按岗位过滤")):
     """获取待领取列表（过期/即将到期）"""
     return svc.get_employee_pending(position)
+
+@router.get("/supplies/low-stock")
+def get_low_stock():
+    """获取库存低于阈值的用品"""
+    return svc.get_low_stock_supplies()

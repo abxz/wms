@@ -207,6 +207,8 @@ class LaborSupply(Base):
     unit = Column(String(16), default="个")
     default_cycle_months = Column(Integer, default=12)
     gb_ref = Column(String(64), default="")
+    current_stock = Column(Integer, default=0)
+    warning_threshold = Column(Integer, default=10)
     remark = Column(Text, default="")
     active = Column(Boolean, default=True)
     created_at = Column(String(32), default="")
@@ -225,6 +227,17 @@ class PositionLaborConfig(Base):
     active = Column(Boolean, default=True)
     created_at = Column(String(32), default="")
     updated_at = Column(String(32), default="")
+
+
+class Notification(Base):
+    """通知"""
+    __tablename__ = "notifications"
+    id = Column(String(32), primary_key=True)
+    type = Column(String(32), default="")
+    title = Column(String(128), default="")
+    message = Column(Text, default="")
+    read = Column(Boolean, default=False)
+    created_at = Column(String(32), default="")
 
 
 class LaborDistribution(Base):
@@ -264,6 +277,7 @@ _TABLE_MODEL.update({
     "labor_supplies": LaborSupply,
     "position_labor_config": PositionLaborConfig,
     "labor_distributions": LaborDistribution,
+    "notifications": Notification,
     # legacy JSON filenames → same models
     "products.json": Product,
     "locations.json": Location,

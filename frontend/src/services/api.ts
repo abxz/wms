@@ -234,20 +234,27 @@ export const api = {
   laborSupplies: (p = 1, s = 20, q = "") => req(`/labor/supplies?page=${p}&size=${s}&search=${q}`),
   laborSuppliesAll: () => req("/labor/supplies/all"),
   laborSupplyGet: (id: string) => req(`/labor/supplies/${id}`),
-  laborSupplyCreate: (d: any) => req("/labor/supplies", { method: "POST", body: d }),
-  laborSupplyUpdate: (id: string, d: any) => req(`/labor/supplies/${id}`, { method: "PUT", body: d }),
+  laborSupplyCreate: (d: any) => req("/labor/supplies", { method: "POST", body: JSON.stringify(d) }),
+  laborSupplyUpdate: (id: string, d: any) => req(`/labor/supplies/${id}`, { method: "PUT", body: JSON.stringify(d) }),
   laborSupplyDelete: (id: string) => req(`/labor/supplies/${id}`, { method: "DELETE" }),
+  laborLowStock: () => req("/labor/supplies/low-stock"),
   laborInitGB: () => req("/labor/supplies/init-gb", { method: "POST" }),
   // 岗位配置
   laborConfigs: (p = 1, s = 20, q = "") => req(`/labor/configs?page=${p}&size=${s}&search=${q}`),
   laborConfigsAll: () => req("/labor/configs/all"),
   laborConfigsByPosition: (pos: string) => req(`/labor/configs/position/${pos}`),
   laborConfigGet: (id: string) => req(`/labor/configs/${id}`),
-  laborConfigCreate: (d: any) => req("/labor/configs", { method: "POST", body: d }),
-  laborConfigUpdate: (id: string, d: any) => req(`/labor/configs/${id}`, { method: "PUT", body: d }),
+  laborConfigCreate: (d: any) => req("/labor/configs", { method: "POST", body: JSON.stringify(d) }),
+  laborConfigUpdate: (id: string, d: any) => req(`/labor/configs/${id}`, { method: "PUT", body: JSON.stringify(d) }),
   laborConfigDelete: (id: string) => req(`/labor/configs/${id}`, { method: "DELETE" }),
   // 领取
   laborDistributions: (p = 1, s = 20, q = "") => req(`/labor/distributions?page=${p}&size=${s}&search=${q}`),
-  laborDistribute: (d: any) => req("/labor/distribute", { method: "POST", body: d }),
+  laborDistribute: (d: any) => req("/labor/distribute", { method: "POST", body: JSON.stringify(d) }),
   laborPending: (pos = "") => req(`/labor/pending?position=${pos}`),
+
+  // ─── 通知 ───
+  getNotifications: (p = 1, s = 20, unread = false) => req(`/notifications?page=${p}&size=${s}&unread_only=${unread}`),
+  getUnreadCount: () => req("/notifications/unread-count"),
+  markNotificationRead: (id: string) => req(`/notifications/${id}/read`, { method: "PUT" }),
+  markAllNotificationsRead: () => req("/notifications/mark-all-read", { method: "POST" }),
 };

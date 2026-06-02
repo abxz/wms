@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Package, ArrowDownToLine, ArrowUpFromLine,
   Warehouse, Users, FileText, UserCircle, MapPin, Menu, X, QrCode, LogOut, DatabaseBackup,
-  ShieldCheck
+  ShieldCheck, Bell
 } from 'lucide-react';
+import { api } from '../../services/api';
 
 const navItems = [
   { path: '/', label: '面板', icon: LayoutDashboard },
@@ -25,6 +26,10 @@ const navItems = [
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const notifRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -34,6 +39,53 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     window.addEventListener('resize', handler);
     return () => window.removeEventListener('resize', handler);
   }, []);
+
+  useEffect(() => {
+    loadUnreadCount();
+    const interval = setInterval(loadUnreadCount, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+        setNotifOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const loadUnreadCount = async () => {
+    try {
+      const res = await api.getUnreadCount();
+      setUnreadCount(res.count || 0);
+    } catch {}
+  };
+
+  const loadNotifications = async () => {
+    try {
+      const res = await api.getNotifications(1, 20, false);
+      setNotifications(res.items || []);
+    } catch {}
+  };
+
+  const toggleNotifications = () => {
+    if (!notifOpen) loadNotifications();
+    setNotifOpen(!notifOpen);
+  };
+
+  const markRead = async (id: string) => {
+    await api.markNotificationRead(id);
+    loadNotifications();
+    loadUnreadCount();
+  };
+
+  const markAllRead = async () => {
+    await api.markAllNotificationsRead();
+    loadNotifications();
+    loadUnreadCount();
+  };
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -100,13 +152,22 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
         {/* 桌面端顶栏 */}
         {!isMobile && (
-          <header className="sticky top-0 z-20 bg-white/80 backdrop-blur-sm border-b border-slate-200 px-6 h-14 flex items-center">
+          <header className="sticky top-0 z-20 bg-white/80 backdrop-blur-sm border-b border-slate-200 px-6 h-14 flex items-center justify-between">
             <span className="text-sm font-medium text-slate-500">
               {navItems.find(i => {
                 if (i.path === '/') return location.pathname === '/';
                 return location.pathname.startsWith(i.path);
               })?.label || '仓储管理'}
             </span>
+            <NotificationBell
+              notifRef={notifRef}
+              unreadCount={unreadCount}
+              notifOpen={notifOpen}
+              notifications={notifications}
+              onToggle={toggleNotifications}
+              onMarkRead={markRead}
+              onMarkAllRead={markAllRead}
+            />
           </header>
         )}
 
@@ -144,6 +205,52 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </button>
           </div>
         </nav>
+      )}
+    </div>
+  );
+}
+
+function NotificationBell({ notifRef, unreadCount, notifOpen, notifications, onToggle, onMarkRead, onMarkAllRead }: any) {
+  return (
+    <div className="relative" ref={notifRef}>
+      <button onClick={onToggle} className="relative p-2 text-slate-600 hover:text-violet-600 transition">
+        <Bell size={20} />
+        {unreadCount > 0 && (
+          <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+            {unreadCount > 9 ? '9+' : unreadCount}
+          </span>
+        )}
+      </button>
+      {notifOpen && (
+        <div className="absolute right-0 mt-2 w-80 bg-white border rounded-xl shadow-xl max-h-96 overflow-hidden flex flex-col">
+          <div className="p-3 border-b flex items-center justify-between">
+            <span className="font-semibold text-sm">通知</span>
+            {notifications.length > 0 && (
+              <button onClick={onMarkAllRead} className="text-xs text-violet-600 hover:underline">全部已读</button>
+            )}
+          </div>
+          <div className="overflow-y-auto">
+            {notifications.length === 0 ? (
+              <div className="p-8 text-center text-slate-400 text-sm">暂无通知</div>
+            ) : (
+              notifications.map((n: any) => (
+                <div
+                  key={n.id}
+                  onClick={() => !n.read && onMarkRead(n.id)}
+                  className={`p-3 border-b hover:bg-slate-50 cursor-pointer ${!n.read ? 'border-l-4 border-l-blue-500 bg-blue-50/50' : ''}`}
+                >
+                  <div className="flex items-start gap-2">
+                    <div className="flex-1">
+                      <div className="font-medium text-sm">{n.title}</div>
+                      <div className="text-xs text-slate-500 mt-1">{n.message}</div>
+                      <div className="text-xs text-slate-400 mt-1">{new Date(n.created_at).toLocaleString('zh-CN')}</div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
       )}
     </div>
   );
