@@ -84,7 +84,7 @@ async def import_main_data(file: UploadFile = File(...)):
 
 @router.post("/employees")
 async def import_employees(file: UploadFile = File(...)):
-    """模板B：员工"""
+    """模板B：员工（完整字段）"""
     _validate_excel(file)
     try:
         import openpyxl
@@ -98,16 +98,18 @@ async def import_employees(file: UploadFile = File(...)):
     for i, row in enumerate(rows):
         line_no = i + 2
         try:
-            name, dept, role, quota, remark = (
-                (str(v).strip() if v else "") for v in (row + (None,)*5)[:5]
+            name, dept, position, job_type, role, education, id_card, address, quota = (
+                (str(v).strip() if v else "") for v in (row + (None,)*9)[:9]
             )
             if not name:
                 results["errors"].append(f"第{line_no}行：姓名为空")
                 continue
             role = role if role in ("super_admin", "admin", "claimer") else "claimer"
             emp_svc.create_employee({
-                "name": name, "department": dept, "role": role,
-                "monthly_quota": float(quota) if quota else 1000, "remark": remark
+                "name": name, "department": dept, "position": position,
+                "job_type": job_type, "role": role, "education": education,
+                "id_card": id_card, "address": address,
+                "monthly_quota": float(quota) if quota else 1000,
             })
             results["success"] += 1
         except Exception as e:
@@ -213,7 +215,7 @@ def download_main_data_template():
 
 @router.get("/template/employees")
 def download_employee_template():
-    """下载员工导入模板"""
+    """下载员工导入模板（完整字段）"""
     import openpyxl
     from io import BytesIO
     from fastapi.responses import StreamingResponse
@@ -221,9 +223,9 @@ def download_employee_template():
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "员工导入模板"
-    headers = ["姓名","部门","角色","领用额度","备注"]
+    headers = ["姓名","部门","岗位","工种","角色","学历","身份证号","地址","月度额度"]
     ws.append(headers)
-    ws.append(["张三","机加工车间","claimer","1000",""])
+    ws.append(["张三","生产部","班组长","爆破工","claimer","大专","410102199001010001","河南省郑州市","1000"])
     
     buf = BytesIO()
     wb.save(buf)
@@ -299,9 +301,9 @@ def export_employees():
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "员工"
-    ws.append(["ID","姓名","工号","部门","角色","月度额度","已用额度"])
+    ws.append(["ID","姓名","工号","部门","岗位","工种","角色","学历","身份证号","地址","月度额度","已用额度","状态"])
     for e in emp_svc.list_employees(size=9999).get("items", []):
-        ws.append([e.get(k,"") for k in ["id","name","employee_no","department","role","monthly_quota","monthly_used"]])
+        ws.append([e.get(k,"") for k in ["id","name","employee_no","department","position","job_type","role","education","id_card","address","monthly_quota","monthly_used","active"]])
     return _excel_response(wb, "employees.xlsx")
 
 
@@ -517,3 +519,207 @@ def download_master_employees_template():
     buf.seek(0)
     return StreamingResponse(buf, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                              headers={"Content-Disposition": "attachment; filename=master_employees_template.xlsx"})
+
+
+# ═══════════════════════════════════════════════════════════════
+# master_config 配置项导入导出（部门/岗位/工种/角色）
+# ═══════════════════════════════════════════════════════════════
+
+CONFIG_TYPE_LABELS = {
+    "departments": "部门",
+    "positions": "岗位",
+    "job_types": "工种",
+    "roles": "角色",
+}
+
+
+@router.get("/export/config/{config_type}")
+def export_config(config_type: str):
+    """导出配置项（部门/岗位/工种/角色）"""
+    if config_type not in CONFIG_TYPE_LABELS:
+        raise HTTPException(400, f"不支持的配置类型: {config_type}")
+    import openpyxl
+    import json
+    from core.database import get_by
+    label = CONFIG_TYPE_LABELS[config_type]
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = f"{label}列表"
+    ws.append([label])
+    row = get_by("system_config", "key", config_type)
+    items = json.loads(row.get("value", "[]")) if row else []
+    for item in items:
+        ws.append([item])
+    return _excel_response(wb, f"{config_type}.xlsx")
+
+
+@router.get("/template/config/{config_type}")
+def download_config_template(config_type: str):
+    """下载配置项导入模板（部门/岗位/工种/角色）"""
+    if config_type not in CONFIG_TYPE_LABELS:
+        raise HTTPException(400, f"不支持的配置类型: {config_type}")
+    import openpyxl
+    from io import BytesIO
+    from fastapi.responses import StreamingResponse
+    label = CONFIG_TYPE_LABELS[config_type]
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = f"{label}导入模板"
+    ws.append([label])
+    ws.append([f"示例{label}1"])
+    ws.append([f"示例{label}2"])
+    buf = BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return StreamingResponse(buf,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={config_type}_template.xlsx"})
+
+
+def _levenshtein(s1: str, s2: str) -> int:
+    """计算编辑距离"""
+    if len(s1) < len(s2):
+        return _levenshtein(s2, s1)
+    if len(s2) == 0:
+        return len(s1)
+    prev = range(len(s2) + 1)
+    for i, c1 in enumerate(s1):
+        curr = [i + 1]
+        for j, c2 in enumerate(s2):
+            insertions = prev[j + 1] + 1
+            deletions = curr[j] + 1
+            substitutions = prev[j] + (c1 != c2)
+            curr.append(min(insertions, deletions, substitutions))
+        prev = curr
+    return prev[len(s2)]
+
+
+def _get_pinyin(s: str) -> str:
+    """获取中文字符串的拼音（无声调）"""
+    try:
+        from pypinyin import pinyin, Style
+        return "".join(p[0] for p in pinyin(s, style=Style.NORMAL))
+    except ImportError:
+        return ""
+
+
+def _find_suspects(name: str, existing: list) -> list:
+    """查找疑似重复项，返回 [{name, rule}] 列表"""
+    suspects = []
+    py_name = _get_pinyin(name)
+    for item in existing:
+        rules = []
+        # 规则1：包含关系
+        if name in item or item in name:
+            rules.append("包含关系")
+        # 规则2：编辑距离<=1
+        dist = _levenshtein(name, item)
+        if dist == 1:
+            rules.append("编辑距离1")
+        # 规则3：拼音相同
+        if py_name and _get_pinyin(item) == py_name:
+            rules.append("拼音相同")
+        if rules:
+            suspects.append({"name": item, "rule": "+".join(rules)})
+    return suspects
+
+
+# 暂存导入待确认的suspects（内存缓存，按config_type分组）
+_pending_imports: dict = {}
+
+
+@router.post("/config/{config_type}")
+async def import_config(config_type: str, file: UploadFile = File(...)):
+    """导入配置项（部门/岗位/工种/角色），含重复检测"""
+    if config_type not in CONFIG_TYPE_LABELS:
+        raise HTTPException(400, f"不支持的配置类型: {config_type}")
+    _validate_excel(file)
+    try:
+        import openpyxl
+        import json
+        from core.database import get_by
+        wb = openpyxl.load_workbook(file.file, data_only=True)
+        ws = wb.active
+        rows = list(ws.iter_rows(min_row=2, values_only=True))
+    except Exception as e:
+        raise HTTPException(400, f"Excel 解析失败: {str(e)}")
+
+    label = CONFIG_TYPE_LABELS[config_type]
+    row = get_by("system_config", "key", config_type)
+    existing = json.loads(row.get("value", "[]")) if row else []
+
+    results = {"total": len(rows), "success": 0, "skipped": 0, "suspects": [], "errors": []}
+    to_add = []       # 确认新增的
+    suspect_list = []  # 待确认的
+
+    for i, r in enumerate(rows):
+        line_no = i + 2
+        name = str(r[0]).strip() if r and r[0] else ""
+        if not name:
+            results["errors"].append(f"第{line_no}行：{label}名称为空")
+            continue
+        # 精确重复
+        if name in existing or name in to_add:
+            results["skipped"] += 1
+            results["errors"].append(f"第{line_no}行：'{name}'已存在，跳过")
+            continue
+        # 疑似重复检测
+        suspects = _find_suspects(name, existing)
+        if suspects:
+            suspect_list.append({"name": name, "line": line_no, "similar_to": suspects})
+            continue
+        to_add.append(name)
+        results["success"] += 1
+
+    # 写回数据库（仅确认新增的）
+    if to_add:
+        _write_config(config_type, existing + to_add, row)
+    # 暂存suspects供后续确认
+    if suspect_list:
+        _pending_imports[config_type] = {"existing_snapshot": existing, "suspects": suspect_list}
+        results["suspects"] = suspect_list
+    return results
+
+
+def _write_config(config_type: str, items: list, existing_row=None):
+    """写入配置到数据库"""
+    import json
+    from core.database import get_by, add as db_add
+    val = json.dumps(items, ensure_ascii=False)
+    if existing_row:
+        from core.database import update as db_update
+        db_update("system_config", existing_row["id"], {"value": val})
+    else:
+        from core.utils import generate_id
+        db_add("system_config", {"id": generate_id(), "key": config_type, "value": val})
+
+
+@router.post("/config/{config_type}/confirm")
+async def confirm_import_config(config_type: str, body: dict):
+    """确认导入suspects中的项
+    body: {"confirmed": ["安全课", "生产部车间"], "rejected": ["安全课2"]}
+    """
+    if config_type not in CONFIG_TYPE_LABELS:
+        raise HTTPException(400, f"不支持的配置类型: {config_type}")
+    import json
+    from core.database import get_by
+
+    confirmed = body.get("confirmed", [])
+    row = get_by("system_config", "key", config_type)
+    existing = json.loads(row.get("value", "[]")) if row else []
+
+    added = 0
+    for name in confirmed:
+        name = name.strip()
+        if name and name not in existing:
+            existing.append(name)
+            added += 1
+
+    if added > 0:
+        _write_config(config_type, existing, row)
+
+    # 清理暂存
+    _pending_imports.pop(config_type, None)
+
+    label = CONFIG_TYPE_LABELS[config_type]
+    return {"confirmed": len(confirmed), "added": added, "message": f"已确认添加{added}个{label}"}

@@ -169,7 +169,7 @@ export const api = {
   },
 
   // ─── 模板下载 ───
-  downloadTemplate: async (type: 'main-data' | 'employees' | 'orders' | 'master-products' | 'master-suppliers' | 'master-employees') => {
+  downloadTemplate: async (type: string) => {
     const filenameMap: Record<string, string> = {
       'main-data': '主数据导入模板.xlsx',
       'employees': '员工导入模板.xlsx',
@@ -177,8 +177,14 @@ export const api = {
       'master-products': '基础商品模板.xlsx',
       'master-suppliers': '基础供应商模板.xlsx',
       'master-employees': '基础员工模板.xlsx',
+      'config-departments': '部门导入模板.xlsx',
+      'config-positions': '岗位导入模板.xlsx',
+      'config-job_types': '工种导入模板.xlsx',
+      'config-roles': '角色导入模板.xlsx',
     };
-    await authDownload(`${API_BASE}/api/import/template/${type}`, filenameMap[type] || '导入模板.xlsx');
+    // config-departments → template/config/departments
+    const apiPath = type.startsWith('config-') ? `config/${type.replace('config-', '')}` : type;
+    await authDownload(`${API_BASE}/api/import/template/${apiPath}`, filenameMap[type] || '导入模板.xlsx');
   },
 
   // ─── 通用导入（带认证）───
@@ -336,4 +342,15 @@ export const api = {
   getMasterConfig: (type: string) => req(`/master-config/${type}`),
   addMasterConfig: (type: string, name: string) => req(`/master-config/${type}`, { method: "POST", body: JSON.stringify({ name }) }),
   deleteMasterConfig: (type: string, name: string) => req(`/master-config/${type}/${encodeURIComponent(name)}`, { method: "DELETE" }),
+
+  // ─── 配置项导入导出（部门/岗位/工种/角色）───
+  exportConfig: async (type: string) => {
+    const labelMap: Record<string, string> = { departments: '部门', positions: '岗位', job_types: '工种', roles: '角色' };
+    await authDownload(`${API_BASE}/api/import/export/config/${type}`, `${labelMap[type] || type}.xlsx`);
+    showToast("导出成功");
+  },
+  uploadConfig: (type: string, file: File) => authUpload(`${API_BASE}/api/import/config/${type}`, file),
+  confirmImportConfig: async (type: string, confirmed: string[], rejected: string[]) => {
+    return req(`/import/config/${type}/confirm`, { method: "POST", body: JSON.stringify({ confirmed, rejected }) });
+  },
 };

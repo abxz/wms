@@ -46,6 +46,8 @@ function ConfigListTab({ configType }: { configType: string }) {
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
   const [errorModal, setErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [importModal, setImportModal] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   const load = async () => {
     try {
@@ -93,10 +95,21 @@ function ConfigListTab({ configType }: { configType: string }) {
           <span className="text-sm font-medium text-gray-700">
             {tabLabel}列表（{items.length}项）
           </span>
-          <button onClick={() => { setNewName(""); setAddModal(true); }}
-            className="bg-blue-500 text-white px-3 py-1.5 rounded-lg text-sm flex items-center gap-1">
-            <Plus size={14} /> 新增
-          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={() => setImportModal(true)}
+              className="bg-green-500 text-white px-3 py-1.5 rounded-lg text-sm flex items-center gap-1">
+              <Upload size={14} /> 导入
+            </button>
+            <button onClick={async () => { setExporting(true); try { await api.exportConfig(configType); } catch {} setExporting(false); }}
+              disabled={exporting}
+              className="bg-gray-100 text-gray-700 px-3 py-1.5 rounded-lg text-sm flex items-center gap-1 hover:bg-gray-200 disabled:opacity-50">
+              <Download size={14} /> {exporting ? "导出中..." : "导出"}
+            </button>
+            <button onClick={() => { setNewName(""); setAddModal(true); }}
+              className="bg-blue-500 text-white px-3 py-1.5 rounded-lg text-sm flex items-center gap-1">
+              <Plus size={14} /> 新增
+            </button>
+          </div>
         </div>
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b text-gray-600">
@@ -152,6 +165,16 @@ function ConfigListTab({ configType }: { configType: string }) {
           <button onClick={() => setErrorModal(false)} className="w-full border rounded-lg py-2 text-sm">确定</button>
         </div>
       </Modal>
+
+      {/* 导入弹窗 */}
+      <ImportModal
+        open={importModal}
+        onClose={() => setImportModal(false)}
+        templateType={`config-${configType}`}
+        onImport={(file) => api.uploadConfig(configType, file)}
+        onSuccess={() => load()}
+        moduleName={tabLabel}
+      />
     </div>
   );
 }
