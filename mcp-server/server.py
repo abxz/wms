@@ -46,6 +46,7 @@ mcp = FastMCP(
 # ── HTTP 客户端 ────────────────────────────────────────
 _client: httpx.AsyncClient | None = None
 _token: str = ""
+_lock = asyncio.Lock()
 
 
 def _get_client() -> httpx.AsyncClient:
@@ -60,6 +61,17 @@ def _get_client() -> httpx.AsyncClient:
             timeout=30.0,
         )
     return _client
+
+
+async def _rebuild_client():
+    """安全重建 client，加锁防止并发竞态"""
+    global _client, _token
+    async with _lock:
+        if _client:
+            await _client.aclose()
+        _client = None
+        # 触发重建
+        _get_client()
 
 
 async def _request(method: str, path: str, **kw) -> dict:
@@ -111,22 +123,21 @@ async def _delete(path: str) -> dict:
 
 @mcp.tool(description="WMS 用户登录，获取 JWT token。成功后自动设置后续请求的认证头。参数: username, password")
 async def auth_login(username: str, password: str) -> dict:
-    global _token, _client
+    global _token
     resp = await _request("POST", "/auth/login", json={"username": username, "password": password})
     _token = resp.get("token") or resp.get("access_token", "")
     if _token:
-        # 重建 client 带上新 token
-        _client = None
+        await _rebuild_client()
     return resp
 
 
 @mcp.tool(description="刷新 JWT token")
 async def auth_refresh() -> dict:
-    global _token, _client
-    resp = await _request("POST", "/auth/refresh")
+    global _token
+    resp = await _request("POST", "/auth/auth/refresh")
     _token = resp.get("token") or resp.get("access_token", "")
     if _token:
-        _client = None
+        await _rebuild_client()
     return resp
 
 
@@ -787,37 +798,37 @@ async def labor_supplies_low_stock() -> dict:
     return await _get("/labor/supplies/low-stock")
 
 
-@mcp.tool(description("创建劳保用品。参数: body(dict)"))
+@mcp.tool(description="创建劳保用品。参数: body(dict)")
 async def labor_supplies_create(body: dict) -> dict:
     return await _post("/labor/supplies", body)
 
 
-@mcp.tool(description("更新劳保用品。参数: supply_id, body(dict)"))
+@mcp.tool(description="更新劳保用品。参数: supply_id, body(dict)")
 async def labor_supplies_update(supply_id: str, body: dict) -> dict:
     return await _put(f"/labor/supplies/{supply_id}", body)
 
 
-@mcp.tool(description("删除劳保用品。参数: supply_id"))
+@mcp.tool(description="删除劳保用品。参数: supply_id")
 async def labor_supplies_delete(supply_id: str) -> dict:
     return await _delete(f"/labor/supplies/{supply_id}")
 
 
-@mcp.tool(description("按岗位查劳保配置。参数: position"))
+@mcp.tool(description="按岗位查劳保配置。参数: position")
 async def labor_configs_by_position(position: str) -> dict:
     return await _get(f"/labor/configs/position/{position}")
 
 
-@mcp.tool(description("查询待发放列表"))
+@mcp.tool(description="查询待发放列表")
 async def labor_pending() -> dict:
     return await _get("/labor/pending")
 
 
-@mcp.tool(description("发放劳保用品。参数: body(dict)"))
+@mcp.tool(description="发放劳保用品。参数: body(dict)")
 async def labor_distribute(body: dict) -> dict:
     return await _post("/labor/distribute", body)
 
 
-@mcp.tool(description("查询发放记录列表"))
+@mcp.tool(description="查询发放记录列表")
 async def labor_distributions() -> dict:
     return await _get("/labor/distributions")
 
@@ -894,9 +905,7 @@ async def master_config_delete(config_type: str, name: str) -> dict:
 
 @mcp.tool(description="WMS 服务健康检查")
 async def health_check() -> dict:
-    c = _get_client()
-    resp = await c.get("/health")
-    return resp.json()
+    return await _get("/health")
 
 
 # ══════════════════════════════════════════════════════
@@ -908,7 +917,7 @@ def main():
     import os
     import logging
     logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(levelname)s %(message)s")
-    host = os.environ.get("MCP_HOST", "0.0.0.0")
+    host = os.environ.get("MCP_HOST", "127.0.0.1")
     port = int(os.environ.get("MCP_PORT", "5175"))
     mcp.settings.host = host
     mcp.settings.port = port

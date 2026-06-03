@@ -13,7 +13,7 @@ if not JWT_SECRET:
 if not JWT_SECRET:
     raise RuntimeError("JWT_SECRET 环境变量或 /root/.hermes/shared/jwt.key 必须配置")
 
-# 免认证路径白名单
+# 免认证路径（精确匹配）
 PUBLIC_PATHS = {
     "/api/health",
     "/api/auth/login",
@@ -24,12 +24,15 @@ PUBLIC_PATHS = {
     "/redoc",
 }
 
-# 免认证路径前缀（允许子路径）
+# 免认证路径前缀（允许子路径）— 仅 GET 读操作免认证
 PUBLIC_PATH_PREFIXES = {
     "/api/dashboard/",
-    "/api/locations/",
     "/api/invoice-classifier/",
-    "/api/debug/",
+}
+
+# 仅 GET 免认证的路径前缀（写操作需要认证）
+PUBLIC_GET_PREFIXES = {
+    "/api/locations",
 }
 
 
@@ -54,6 +57,12 @@ class JWTAuthMiddleware:
 
         for prefix in PUBLIC_PATH_PREFIXES:
             if path.startswith(prefix):
+                await self.app(scope, receive, send)
+                return
+
+        # 仅 GET 免认证的路径前缀
+        for prefix in PUBLIC_GET_PREFIXES:
+            if path.startswith(prefix) and request.method == "GET":
                 await self.app(scope, receive, send)
                 return
 

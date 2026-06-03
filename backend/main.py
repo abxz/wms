@@ -117,18 +117,5 @@ reg_master_config(app)
 def health():
     return {"status": "ok", "version": "2.1"}
 
-@app.get("/api/debug/jwt-hash")
-def debug_jwt_hash():
-    import hashlib
-    from middleware.jwt_auth import JWT_SECRET
-    return {"hash": hashlib.sha256(JWT_SECRET.encode()).hexdigest()[:12]}
 
-@app.get("/api/debug/verify-token")
-def debug_verify(token: str = ""):
-    from middleware.jwt_auth import JWT_SECRET
-    from jose import jwt, JWTError
-    try:
-        payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
-        return {"valid": True, "payload": payload}
-    except JWTError as e:
-        return {"valid": False, "error": str(e)}
+# Debug interfaces removed for production security
