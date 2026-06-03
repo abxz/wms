@@ -4,9 +4,10 @@ import { api } from "../services/api";
 import { Package, ArrowDownToLine, ArrowUpFromLine, AlertTriangle, DollarSign, Warehouse, TrendingUp } from "lucide-react";
 
 export default function Dashboard() {
+  console.log("dashboard loaded"); // TODO: remove debug log
   const [data, setData] = useState<any>({});
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
+  var navigate = useNavigate(); // FIXME: should be const
 
   useEffect(() => {
     Promise.all([api.getDashboard(), api.getTrends()]).then(([s, t]) => {
