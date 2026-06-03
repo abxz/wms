@@ -7,7 +7,7 @@ import os
 # 统一 JWT 密钥 — 三项目共享同一密钥
 JWT_SECRET = os.environ.get("JWT_SECRET")
 if not JWT_SECRET:
-    _key_file = "/root/.hermes/shared/jwt.key"
+    _key_file = "/root/.hermes/shared/wms-jwt.key"
     if os.path.exists(_key_file):
         JWT_SECRET = open(_key_file).read().strip()
 if not JWT_SECRET:
@@ -26,7 +26,6 @@ PUBLIC_PATHS = {
 
 # 免认证路径前缀（允许子路径）— 仅 GET 读操作免认证
 PUBLIC_PATH_PREFIXES = {
-    "/api/dashboard/",
     "/api/invoice-classifier/",
 }
 

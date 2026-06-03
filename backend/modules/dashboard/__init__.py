@@ -51,6 +51,15 @@ def summary():
         "invoice_matched": sum(1 for i in invoices if i.get("status") == "reconciled"),
     }
 
+@router.get("/alerts")
+def alerts(page: int = 1, page_size: int = 50):
+    """低库存预警列表（分页）"""
+    inventory = get_all_inventory()
+    items = [i for i in inventory if i.get("quantity", 0) <= 10]
+    total = len(items)
+    offset = (page - 1) * page_size
+    return {"total": total, "page": page, "page_size": page_size, "items": items[offset:offset + page_size]}
+
 @router.get("/trends")
 def trends(days: int = 30):
     """月度趋势"""

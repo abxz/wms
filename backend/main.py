@@ -57,8 +57,8 @@ app.add_middleware(
 # JWT认证中间件（保护PDAPI接口）
 app.add_middleware(JWTAuthMiddleware)
 
-# 审计日志中间件（暂禁用 — BaseHTTPMiddleware嵌套导致HTTP状态码异常）
-# app.add_middleware(AuditLogMiddleware)
+# 审计日志中间件（纯ASGI版本，已修复BaseHTTPMiddleware嵌套问题）
+app.add_middleware(AuditLogMiddleware)
 
 # 初始化加密模块
 init_crypto()

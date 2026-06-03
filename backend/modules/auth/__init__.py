@@ -8,7 +8,7 @@ import os
 router = APIRouter(prefix="/api/auth", tags=["PDA认证"])
 
 # JWT配置 — 统一从密钥文件读取（与中间件完全一致）
-_key_file = "/root/.hermes/shared/jwt.key"
+_key_file = "/root/.hermes/shared/wms-jwt.key"
 if os.path.exists(_key_file):
     JWT_SECRET = open(_key_file).read().strip()
 else:
